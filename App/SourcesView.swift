@@ -56,16 +56,15 @@ struct SourcesView: View {
         }
         .navigationTitle("书源")
         .searchable(text: $filter, prompt: "筛选书源")
-        // Some Files providers expose .json as public.data rather than public.json.
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
-            do {
-                guard let url = try result.get().first else { return }
-                let data = try ImportedFile.read(url, extensions: ["json", "xbs"], limit: HTTPClient.subscriptionLimit)
+        .sheet(isPresented: $importing) {
+            SourceFileImportView { url, data in
+              do {
                 // Stable identity; NovelSources copies the actual JSON into its own storage.
                 let identity = URL(fileURLWithPath: "/ImportedSources/" + url.lastPathComponent)
                 let list = try NovelSources.shared.add(identity, data: data, name: url.deletingPathExtension().lastPathComponent)
                 message = "已导入 \(list.count) 个文字书源"; library.reloadSources()
-            } catch { message = error.localizedDescription }
+              } catch { message = error.localizedDescription }
+            }
         }
     }
     private func importURL() async {

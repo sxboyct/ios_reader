@@ -22,6 +22,8 @@ public enum NovelLibrary {
         public var chapterCount: Int
         /// How far into the chapter, 0–1.
         public var position: Double
+        /// UTF-16 position used by the paged reader; nil migrates the older paragraph-based position.
+        public var characterOffset: Int?
         /// For an audiobook, where in the chapter listening stopped, in seconds (#1130).
         public var seconds: Double?
         public var updated: Date
@@ -43,6 +45,7 @@ public enum NovelLibrary {
             chapterTitle = ((try? c.decodeIfPresent(String.self, forKey: .chapterTitle)) ?? nil) ?? ""
             chapterCount = ((try? c.decodeIfPresent(Int.self, forKey: .chapterCount)) ?? nil) ?? 0
             position = ((try? c.decodeIfPresent(Double.self, forKey: .position)) ?? nil) ?? 0
+            characterOffset = try? c.decodeIfPresent(Int.self, forKey: .characterOffset)
             updated = ((try? c.decodeIfPresent(Date.self, forKey: .updated)) ?? nil) ?? added
             bookmarks = ((try? c.decodeIfPresent([NovelBookmark].self, forKey: .bookmarks)) ?? nil) ?? []
         }
@@ -59,12 +62,14 @@ public enum NovelLibrary {
         /// found by title, else by number.
         public mutating func follow(_ book: NovelBook, chapters: [NovelChapter]) {
             self.book = book
+            characterOffset = nil
             if let index = NovelChapterMatch.index(title: chapterTitle, index: chapterIndex, in: chapters) {
                 chapterIndex = index; chapterTitle = chapters[index].title
             }
             for at in bookmarks.indices {
                 guard let index = NovelChapterMatch.index(title: bookmarks[at].chapterTitle, index: bookmarks[at].chapterIndex, in: chapters) else { continue }
                 bookmarks[at].chapterIndex = index; bookmarks[at].chapterTitle = chapters[index].title
+                bookmarks[at].characterOffset = nil
             }
             bookmarks.sort { ($0.chapterIndex, $0.position) < ($1.chapterIndex, $1.position) }
             chapterCount = chapters.count
@@ -101,11 +106,13 @@ public struct NovelBookmark: Codable, Hashable, Sendable, Identifiable {
     public var chapterTitle: String
     /// How far into the chapter, 0–1, as the shelf keeps the reading place.
     public var position: Double
+    public var characterOffset: Int?
     public var excerpt: String
     public var created: Date
-    public init(id: UUID = UUID(), chapterIndex: Int, chapterTitle: String, position: Double, excerpt: String, created: Date = Date()) {
+    public init(id: UUID = UUID(), chapterIndex: Int, chapterTitle: String, position: Double, excerpt: String, created: Date = Date(), characterOffset: Int? = nil) {
         self.id = id; self.chapterIndex = chapterIndex; self.chapterTitle = chapterTitle
         self.position = min(1, max(0, position)); self.excerpt = excerpt; self.created = created
+        self.characterOffset = characterOffset
     }
 }
 

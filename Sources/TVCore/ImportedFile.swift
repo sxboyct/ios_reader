@@ -17,7 +17,12 @@ public enum ImportedFile {
                 }
                 let handle = try FileHandle(forReadingFrom: local)
                 defer { try? handle.close() }
-                let data = try handle.read(upToCount: limit + 1) ?? Data()
+                var data = Data()
+                while data.count <= limit {
+                    let chunk = try handle.read(upToCount: min(64 * 1024, limit + 1 - data.count)) ?? Data()
+                    if chunk.isEmpty { break }
+                    data.append(chunk)
+                }
                 guard !data.isEmpty, data.count <= limit else { throw TVError.unsupported("文件为空或超过大小限制。") }
                 return data
             }

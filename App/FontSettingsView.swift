@@ -60,11 +60,14 @@ struct FontSettingsView: View {
             if let error = fonts.error { Section("提示") { Text(error).foregroundStyle(.red) } }
         }
         .navigationTitle("阅读字体")
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
+        .sheet(isPresented: $importing) {
+          DocumentImportPicker { url in
+            importing = false
+            guard let url else { return }
             do {
-                guard let url = try result.get().first else { return }
                 selection = try fonts.add(url); fonts.error = nil
             } catch { fonts.error = error.localizedDescription }
+          }.ignoresSafeArea()
         }
     }
     private func row(_ title: String, id: String) -> some View {

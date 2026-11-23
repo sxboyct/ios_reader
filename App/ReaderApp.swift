@@ -4,18 +4,36 @@ import TVCore
 @main
 struct ReaderApp: App {
     @State private var library = ReaderLibrary()
+    @State private var selectedTab = 0
+    @State private var importMessage: String?
     var body: some Scene {
         WindowGroup {
-            TabView {
-                NavigationStack { ShelfView() }.tabItem { Label("书架", systemImage: "books.vertical") }
-                NavigationStack { SearchView() }.tabItem { Label("找书", systemImage: "magnifyingglass") }
-                NavigationStack { SourcesView() }.tabItem { Label("书源", systemImage: "list.bullet.rectangle") }
-                NavigationStack { FontSettingsView() }.tabItem { Label("字体", systemImage: "textformat") }
+            TabView(selection: $selectedTab) {
+                NavigationStack { ShelfView() }.tabItem { Label("书架", systemImage: "books.vertical") }.tag(0)
+                NavigationStack { SearchView() }.tabItem { Label("找书", systemImage: "magnifyingglass") }.tag(1)
+                NavigationStack { SourcesView() }.tabItem { Label("书源", systemImage: "list.bullet.rectangle") }.tag(2)
             }
             .environment(library)
             .tint(Color(red: 0.27, green: 0.43, blue: 0.35))
             .task { await NovelSources.shared.loaded(); library.reloadSources() }
             .onReceive(NotificationCenter.default.publisher(for: NovelSources.changedNotification)) { _ in library.reloadSources() }
+            .onOpenURL { url in
+                guard url.isFileURL else { return }
+                Task {
+                    do {
+                        let data = try await Task.detached(priority: .userInitiated) {
+                            try ImportedFile.read(url, extensions: ["json", "xbs"], limit: HTTPClient.subscriptionLimit)
+                        }.value
+                        let identity = URL(fileURLWithPath: "/ImportedSources/" + url.lastPathComponent)
+                        let list = try NovelSources.shared.add(identity, data: data, name: url.deletingPathExtension().lastPathComponent)
+                        library.reloadSources(); selectedTab = 2
+                        importMessage = "已导入 \(list.count) 个文字书源"
+                    } catch { importMessage = error.localizedDescription }
+                }
+            }
+            .alert("书源导入", isPresented: Binding(get: { importMessage != nil }, set: { if !$0 { importMessage = nil } })) {
+                Button("确定") { importMessage = nil }
+            } message: { Text(importMessage ?? "") }
         }
     }
 }
@@ -137,6 +155,13 @@ struct BookDetailView: View {
     @State private var chapters: [NovelChapter] = []
     @State private var error: String?
     @State private var loading = true
+    @State private var reading: ReadingStart?
+    private struct ReadingStart: Identifiable {
+        let id = UUID()
+        let index: Int
+        var position: Double = 0
+        var offset: Int? = nil
+    }
     var body: some View {
         List {
             Section {
@@ -146,7 +171,9 @@ struct BookDetailView: View {
                     if library.entry(book) == nil { library.save(NovelLibrary.ShelfBook(book: book)) }
                 }.disabled(library.entry(book) != nil)
                 if let index = NovelChapterMatch.index(title: library.entry(book)?.chapterTitle ?? "", index: library.entry(book)?.chapterIndex ?? 0, in: chapters) {
-                    NavigationLink("继续阅读") { ReaderView(book: book, chapters: chapters, start: index, position: library.entry(book)?.position ?? 0) }
+                    Button("继续阅读") {
+                        reading = ReadingStart(index: index, position: library.entry(book)?.position ?? 0, offset: library.entry(book)?.characterOffset)
+                    }
                 }
             }
             if loading { ProgressView("正在加载目录…") }
@@ -154,12 +181,16 @@ struct BookDetailView: View {
             Section("目录 · \(chapters.count)") {
                 ForEach(chapters) { chapter in
                     if chapter.isVolume { Text(chapter.title).font(.headline) }
-                    else { NavigationLink(chapter.title) { ReaderView(book: book, chapters: chapters, start: chapter.index) } }
+                    else { Button(chapter.title) { reading = ReadingStart(index: chapter.index) } }
                 }
             }
         }.navigationTitle(book.name).navigationBarTitleDisplayMode(.inline)
         .task { await load() }
         .refreshable { await load(refresh: true) }
+        .fullScreenCover(item: $reading) { start in
+            ReaderView(book: book, chapters: chapters, start: start.index, position: start.position, characterOffset: start.offset)
+                .environment(library)
+        }
     }
     private func load(refresh: Bool = false) async {
         loading = true; error = nil

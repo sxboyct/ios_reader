@@ -17,3 +17,20 @@
 - Native CI tests added: XBS known independent codec vector, bad containers, JSON extension/size checks, invalid fonts, generated original font import/registration/duplicate/restore/removal, Xiangse source persistence, native dispatcher boot. These tests are NOT RUN locally (Windows, no Xcode).
 - New Swift source syntax and YAML structure checked locally; syntax analysis is not compilation.
 - Official StandarReader acceptance: BLOCKED — exact official unmodified 2.56.1 runtime/provenance is unavailable. iOS picker usability, font rendering, native compilation and device tests remain NOT RUN. No final skill-level pass is claimed.
+
+## 1.2.0 — Fullscreen, page turning and iOS file import
+
+- Removed the Font tab; retained font controls in reading settings.
+- All chapter entry points now present ReaderView using fullScreenCover. Main navigation/tab UI is outside the reader presentation; status bar, home indicator and progress visibility are configurable and default hidden. Center tap reveals in-reader controls and exit.
+- Added TextKit pagination and native rendering for slide, UIKit curl, cover, fade, vertical and continuous scroll modes. Text measurement and page drawing share one layout. End/start chapter transitions skip volume headings. Progress stores an optional UTF-16 characterOffset; old paragraph progress remains a migration fallback. Font/size/viewport changes retain text position.
+- Replaced SwiftUI fileImporter with UIDocumentPickerViewController(forOpeningContentTypes:asCopy:true), plus folder-scoped in-app JSON/XBS listing, and app document declarations/onOpenURL. This addresses the reported disabled JSON selector through two independent import paths. Actual iPhone 17 / iOS 26.6.1 UI remains unverified.
+- PASS locally: new/changed Swift syntax parsing (not type-checking), project YAML/document declarations, source/resource inventory, Legado fixture tests and Xiangse fixture tests.
+- Added native tests for complete and nonoverlapping page character ranges, long paragraphs/emoji, font/viewport reflow anchors, old/new progress persistence, and provider-UTI-independent folder import followed by bounded file reading. Native tests are configured in the existing Actions test target, but NOT RUN locally.
+- NOT RUN: Xcode Swift compilation, iOS Simulator/UIKit interaction tests, curl gesture/animation inspection, status-bar/home-indicator behavior, actual Files providers and iPhone installation. This Windows host has no Xcode; no successful IPA build is claimed.
+
+Device acceptance for this version:
+1. Install 1.2.0 (3); confirm only Shelf, Search, Sources tabs exist.
+2. Open an existing book; confirm the tab/nav/status chrome is absent; center tap opens menu and exit returns to the prior page.
+3. In each of six modes, turn forward/back, cross chapter boundaries, change font/size and reopen the book to check the saved place. Check a paragraph longer than one screen and iPad rotation.
+4. Choose suduguu.json with the native file picker. If the provider disables it, select its containing folder and import it from the in-app list; repeat from Files share/open. Check cancel, empty folder, wrong file type and not-yet-downloaded cloud files.
+5. Import/switch/remove a font from reading settings and check it after relaunch.

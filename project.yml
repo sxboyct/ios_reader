@@ -29,8 +29,24 @@ targets:
       path: Config/iOS/Info.plist
       properties:
         CFBundleDisplayName: 映匣阅读
-        CFBundleShortVersionString: '1.1.0'
-        CFBundleVersion: '2'
+        CFBundleShortVersionString: '1.2.0'
+        CFBundleVersion: '3'
+        LSSupportsOpeningDocumentsInPlace: true
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Book Source JSON
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.json]
+          - CFBundleTypeName: Xiangse Book Source
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [com.tvbox.yingxia.reader.xbs]
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.tvbox.yingxia.reader.xbs
+            UTTypeDescription: Xiangse Book Source
+            UTTypeConformsTo: [public.data]
+            UTTypeTagSpecification:
+              public.filename-extension: [xbs]
         LSRequiresIPhoneOS: true
         UILaunchScreen: {}
         UIApplicationSceneManifest:
