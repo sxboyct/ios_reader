@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/jo32/tvbox-silicon",
+  "archive": "tvbox-silicon-main.zip",
+  "archive_sha256": "38d40cdbe93453daae229ae452d1aae54ac871c465212fa165af82402ec6e5b5",
+  "prepared_date": "2026-11-23",
+  "license": "GPL-3.0-only",
+  "scope": "Legado text reading only; shared QuickJS infrastructure from existing reduced derivative",
+  "original_files_sha256": {
+    "Sources/TVCore/NovelLibrary.swift": "50b64ec58c3b9a578dced55ba397a1d8bf1312a8d484a85ae2b7c6c1ddbf181e",
+    "Sources/TVCore/NovelListening.swift": "03e63acc2921b173e467ead501d739424723ee70b5db069aed2976fbde5b46bf",
+    "Sources/TVCore/NovelModels.swift": "a044e2c70db8b5edcbc929c42a572c483c1a25610834ac527967b71ad9b35907",
+    "Sources/TVCore/NovelReaderStyle.swift": "40e6f44a8d873281474fcec479d440ac14bece2cab664b7b8c321d436217be18",
+    "Sources/TVCore/NovelRuntime.swift": "8d6c70fb60eec0e9ff8bfa25d479d5b1cc45e77718420e0e25801c940a0f5bb2",
+    "Sources/TVCore/NovelSourceIndex.swift": "c808fd3ef28977c5f66c96b1c4562e825526ed77fa5afe9420f4d6418a4a75e7",
+    "Sources/TVCore/NovelSources.swift": "730a50b71096c616a82f40fe2023d665d0610f4c6969f909104f631b6be754b9"
+  },
+  "shared_support_original_sha256": {
+    "Sources/TVCore/Models.swift": "aa5fd3275eb725171ee251fa1d4749df627bc3d7e3217ccfab69a388b789b8dd",
+    "Sources/TVCore/ScriptRuntime.swift": "aade22c1a23159996b6e3a65249d0ce4c5f975d71e391e27ea15bfe665401cfd",
+    "Sources/TVCore/ScriptCrypto.swift": "6254aa93953a75f9290707ce70f0be2e00bd62edc7d69e378924dc9db0b303b1",
+    "Sources/TVCore/PluginChecksum.swift": "8737f5de861a595e241da2b2e98505ce48e2b10c35568e2e103d2b59f557591e",
+    "Sources/TVCore/Diagnostics.swift": "83940eec878d01331c862814cc691a954044cee782acf13c280347a598f322cc",
+    "Sources/TVCore/Localization.swift": "3ff50273790422f1c085f3e40be91c7b1b1491ab50d2ffb4de17a38a1b427a15"
+  },
+  "shared_support_provenance": "Workspace tvbox-silicon music-only derivative; upstream provenance in that derivative: 55a48fbe710ab5d24e0a0d64ad72c22b9dbd891a"
+}
