@@ -86,8 +86,9 @@ public final class NovelSources: @unchecked Sendable {
     /// keeps the name the viewer gave it, unless `name` gives another.
     @discardableResult
     public func add(_ address: URL, data: Data, name: String? = nil) throws -> NovelSourceList {
+        let data = try XBSData.json(data)
         guard let sources = NovelSource.list(from: data), !sources.isEmpty else {
-            throw TVError.unsupported(L10n.text("This address is not a Legado book source list."))
+            throw TVError.unsupported("文件不是有效的 Legado 或香色文字书源 JSON。香色书源需使用别名包装并包含搜索、目录和正文规则。")
         }
         try FileManager.default.createDirectory(at: Self.folder, withIntermediateDirectories: true)
         try data.write(to: Self.file(address), options: .atomic)

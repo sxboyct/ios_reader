@@ -8,7 +8,7 @@ import WebKit
 /// ported to ScriptAssets/legado/engine.js. Requests are synchronous inside a runtime, as in Legado's Rhino
 /// scripts, so a runtime answers one call at a time.
 ///
-/// Two kinds of runtime: a pool of up to `poolSize` shared ones that switch source with `__legado.load` for
+/// Two kinds of runtime: a pool of up to `poolSize` shared ones that switch source with `__reader.load` for
 /// searching and exploring (a search fans out over hundreds of sources), and one kept runtime per source for
 /// reading a book (details, table of contents, chapters). Sources keep their variables and cookies in
 /// NovelStore and NovelHTTP, whichever runtime runs them.
@@ -197,7 +197,7 @@ public actor NovelRuntime {
     /// A runtime with the engine loaded and no source yet.
     static func boot(label: String) async throws -> Session {
         let began = ContinuousClock.now
-        let script = try await ScriptSession.start(module: "assets://legado/engine.js", supplied: [:], profile: NovelLibrary.root.appendingPathComponent("Runtime", isDirectory: true),
+        let script = try await ScriptSession.start(module: "assets://reader/engine.js", supplied: [:], profile: NovelLibrary.root.appendingPathComponent("Runtime", isDirectory: true),
                                                    label: label, extension: NovelHost())
         Diagnostics.shared.record(.info, "novel.boot", "\(label) \(began.duration(to: .now))")
         return Session(script: script)
@@ -206,7 +206,7 @@ public actor NovelRuntime {
     static func load(_ source: NovelSource, into session: Session) async throws {
         if session.key == source.key, session.revision == source.revision { return }
         session.key = ""; session.revision = ""
-        _ = try await evaluate(session.script, "__legado.load(\(json(source.json)))", seconds: 20)
+        _ = try await evaluate(session.script, "__reader.load(\(json(source.json)))", seconds: 20)
         session.key = source.key; session.revision = source.revision
     }
 
@@ -215,7 +215,7 @@ public actor NovelRuntime {
         // The engine stops making requests once `budget` is spent; the runtime's own deadline is a backstop.
         let list = (arguments + [String(Int(budget * 1000))]).joined(separator: ", ")
         do {
-            let value = try await evaluate(session.script, "__legado.\(function)(\(list))", seconds: budget + 10)
+            let value = try await evaluate(session.script, "__reader.\(function)(\(list))", seconds: budget + 10)
             Diagnostics.shared.record(.info, "novel.call", "source=\(source.name) \(function) ok \(started.duration(to: .now))")
             return value
         } catch {
@@ -380,6 +380,7 @@ final class NovelHTTP: NSObject, URLSessionDataDelegate, @unchecked Sendable {
         let timeout = min(30, max(1, (options["timeout"] as? Double ?? 15000) / 1000))
         let target = url
         var request = URLRequest(url: target, timeoutInterval: timeout)
+        if options["forbidCache"] as? Bool == true { request.cachePolicy = .reloadIgnoringLocalCacheData }
         let method = (options["method"] as? String ?? "GET").uppercased()
         request.httpMethod = method
         for (field, value) in options["headers"] as? [String: Any] ?? [:] {
@@ -389,7 +390,16 @@ final class NovelHTTP: NSObject, URLSessionDataDelegate, @unchecked Sendable {
         if method != "GET", method != "HEAD" {
             if let encoded = options["bodyBase64"] as? String { request.httpBody = Data(base64Encoded: encoded) } else if let body = options["body"] as? String { request.httpBody = Data(body.utf8) }
         }
-        let session = session(options["jar"] as? String ?? "")
+        let forbidCookies = options["forbidCookie"] as? Bool == true
+        let session: URLSession
+        if forbidCookies {
+            let configuration = URLSessionConfiguration.ephemeral
+            configuration.httpCookieStorage = nil
+            configuration.httpShouldSetCookies = false
+            session = URLSession(configuration: configuration)
+            request.httpShouldHandleCookies = false
+        } else { session = self.session(options["jar"] as? String ?? "") }
+        defer { if forbidCookies { session.finishTasksAndInvalidate() } }
         let semaphore = DispatchSemaphore(value: 0)
         nonisolated(unsafe) var result: (Data?, URLResponse?, Error?) = (nil, nil, nil)
         let task = session.dataTask(with: request) { data, response, error in result = (data, response, error); semaphore.signal() }

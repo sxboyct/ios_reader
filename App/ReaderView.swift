@@ -16,6 +16,8 @@ struct ReaderView: View {
     @State private var contents = false
     @State private var bookmarks = false
     @State private var revision = UUID()
+    @State private var fonts = ReaderFonts.shared
+    @AppStorage("reader.fontName") private var fontName = ""
     @AppStorage("reader.fontSize") private var fontSize = 20.0
     @AppStorage("reader.lineSpacing") private var lineSpacing = 10.0
     @AppStorage("reader.theme") private var theme = "自动"
@@ -33,10 +35,10 @@ struct ReaderView: View {
             if let text = transformed {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: fontSize * 0.7) {
-                        Text(text.title).font(.title2.bold()).padding(.vertical, 20)
+                        Text(text.title).font(fonts.font(fontName, size: fontSize * 1.2)).padding(.vertical, 20)
                         ForEach(Array(text.paragraphs.enumerated()), id: \.offset) { offset, line in
                             Text("　　" + line.trimmingCharacters(in: .whitespacesAndNewlines))
-                                .font(.system(size: fontSize, design: .serif)).lineSpacing(lineSpacing)
+                                .font(fonts.font(fontName, size: fontSize)).lineSpacing(lineSpacing)
                                 .frame(maxWidth: .infinity, alignment: .leading).id(offset)
                         }
                     }.scrollTargetLayout().padding(.horizontal, 24).padding(.bottom, 32)
@@ -81,6 +83,7 @@ struct ReaderView: View {
                 Form {
                     Section("字号 \(Int(fontSize))") { Slider(value: $fontSize, in: 14...34, step: 1) }
                     Section("行距") { Slider(value: $lineSpacing, in: 2...20, step: 1) }
+                    NavigationLink("导入与更换字体") { FontSettingsView() }
                     Picker("主题", selection: $theme) { ForEach(["自动", "纸张", "日间", "夜间"], id: \.self) { Text($0) } }
                     Picker("简繁转换", selection: $script) {
                         Text("原文").tag(""); Text("简体").tag("simplified"); Text("繁体").tag("traditional")

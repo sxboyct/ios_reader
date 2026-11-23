@@ -11,11 +11,11 @@ struct SourcesView: View {
     @State private var filter = ""
     var body: some View {
         List {
-            Section("导入 Legado 文字书源") {
+            Section("导入 Legado / 香色文字书源") {
                 TextField("https://example.com/books.json", text: $address)
                     .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                 Button("从网址导入") { Task { await importURL() } }.disabled(busy || address.isEmpty)
-                Button("从 JSON 文件导入") { importing = true }.disabled(busy)
+                Button("从 JSON / XBS 文件导入") { importing = true }.disabled(busy)
                 if busy { ProgressView("正在导入…") }
                 if let message { Text(message).font(.footnote).foregroundStyle(.secondary) }
             }
@@ -56,14 +56,11 @@ struct SourcesView: View {
         }
         .navigationTitle("书源")
         .searchable(text: $filter, prompt: "筛选书源")
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.json], allowsMultipleSelection: false) { result in
+        // Some Files providers expose .json as public.data rather than public.json.
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
             do {
                 guard let url = try result.get().first else { return }
-                let access = url.startAccessingSecurityScopedResource()
-                defer { if access { url.stopAccessingSecurityScopedResource() } }
-                let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-                guard size <= HTTPClient.subscriptionLimit else { throw TVError.unsupported("书源文件不能超过 32 MB。") }
-                let data = try Data(contentsOf: url)
+                let data = try ImportedFile.read(url, extensions: ["json", "xbs"], limit: HTTPClient.subscriptionLimit)
                 // Stable identity; NovelSources copies the actual JSON into its own storage.
                 let identity = URL(fileURLWithPath: "/ImportedSources/" + url.lastPathComponent)
                 let list = try NovelSources.shared.add(identity, data: data, name: url.deletingPathExtension().lastPathComponent)

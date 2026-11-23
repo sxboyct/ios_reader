@@ -54,10 +54,24 @@ public struct NovelSource: Codable, Hashable, Sendable, Identifiable {
     /// The sources a Legado book source file holds: a JSON array of sources, or one source object.
     /// Nil when the data isn't one.
     public static func list(from data: Data) -> [NovelSource]? {
-        guard let value = try? JSONSerialization.jsonObject(with: data) else { return nil }
+        guard let json = try? XBSData.json(data), let value = try? JSONSerialization.jsonObject(with: json) else { return nil }
         let objects: [[String: Any]]
         if let array = value as? [Any] { objects = array.compactMap { $0 as? [String: Any] } }
-        else if let object = value as? [String: Any] { objects = [object] }
+        else if let object = value as? [String: Any] {
+            if object["bookSourceUrl"] == nil, object.values.contains(where: { ($0 as? [String: Any])?["sourceUrl"] != nil }) {
+                return object.keys.sorted().compactMap { alias in
+                    guard let source = object[alias] as? [String: Any], source["sourceType"] as? String == "text",
+                          let host = source["sourceUrl"] as? String, let name = source["sourceName"] as? String,
+                          source["searchBook"] is [String: Any], source["bookDetail"] is [String: Any], source["chapterList"] is [String: Any],
+                          source["chapterContent"] is [String: Any] else { return nil }
+                    return NovelSource(object: ["bookSourceUrl": "xiangse:" + host + "#" + alias,
+                        "bookSourceName": name, "bookSourceType": 0, "bookSourceGroup": "香色",
+                        "enabled": (source["enable"] as? Int ?? 1) != 0,
+                        "searchUrl": "xiangse", "ruleSearch": [:], "_xiangse": source])
+                }
+            }
+            objects = [object]
+        }
         else { return nil }
         let books = objects.filter { $0["bookSourceUrl"] != nil && ($0["ruleSearch"] != nil || $0["searchUrl"] != nil || $0["ruleToc"] != nil) }
         guard !books.isEmpty, books.count * 2 >= objects.count else { return nil }

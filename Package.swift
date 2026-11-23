@@ -14,6 +14,6 @@ let package = Package(
             publicHeadersPath: "include",
             cSettings: [.define("_GNU_SOURCE"), .define("QUICKJS_NG_BUILD"), .define("NDEBUG")]
         ),
-        .testTarget(name: "ReaderCoreTests", dependencies: ["TVCore"])
+        .testTarget(name: "ReaderCoreTests", dependencies: ["TVCore"], resources: [.copy("Fixtures")])
     ]
 )

@@ -10,6 +10,7 @@ struct ReaderApp: App {
                 NavigationStack { ShelfView() }.tabItem { Label("书架", systemImage: "books.vertical") }
                 NavigationStack { SearchView() }.tabItem { Label("找书", systemImage: "magnifyingglass") }
                 NavigationStack { SourcesView() }.tabItem { Label("书源", systemImage: "list.bullet.rectangle") }
+                NavigationStack { FontSettingsView() }.tabItem { Label("字体", systemImage: "textformat") }
             }
             .environment(library)
             .tint(Color(red: 0.27, green: 0.43, blue: 0.35))

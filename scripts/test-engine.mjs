@@ -14,6 +14,10 @@ const pages = {
 };
 const context = vm.createContext({ console, URL, TextEncoder, TextDecoder });
 context.__host = (op, argument) => {
+  if (op === 'url') {
+    const a = JSON.parse(argument), url = new URL(a.href, a.base || undefined);
+    return JSON.stringify(Object.fromEntries(['href','origin','protocol','host','hostname','port','pathname','search','hash','username','password'].map(k => [k, url[k]])));
+  }
   if (op === 'module') return fs.readFileSync(path.join(root, argument.replace('assets://', '')), 'utf8');
   if (op === 'md5') return crypto.createHash('md5').update(argument).digest('hex');
   if (op === 'novel.flag') return '';
@@ -63,3 +67,4 @@ assert.ok(content.paragraphs.join('').includes('第二段文字。'));
 assert.deepEqual(unwrap(engine.rule('class.item@text', '<div class="item">第一段</div><div class="item">第二段</div>', 'https://example.com')), ['第一段', '第二段']);
 assert.equal(engine.audio, undefined);
 console.log('PASS: bundled modules, source loading, search, detail, catalog, chapter extraction, CSS rules, text-only API');
+export { load, context, unwrap, pages };

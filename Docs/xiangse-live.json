@@ -1,0 +1,61 @@
+{
+  "test": "Reader Xiangse adapter live network chain (curl host, Node VM)",
+  "date": "2026-11-23T13:57:37.540Z",
+  "adapterNetworkCheck": "pass",
+  "officialAppCheck": "blocked",
+  "iOSRuntimeCheck": "not_run",
+  "blockedReason": "Official StandarReader 2.56.1 provenance/runtime and iOS/Xcode are unavailable. This is not official-app acceptance.",
+  "name": "杀戮都市！",
+  "searchResults": 10,
+  "chapterCount": 999,
+  "paragraphs": 97,
+  "characters": 2222,
+  "warnings": [
+    "The supplied bookDetail.desc rule returned no introduction on the live page; source was not modified.",
+    "The live catalog has p-2.html#dir, but the unchanged supplied chapterList has no nextPageUrl rule; 999 entries represent its first catalog page only."
+  ],
+  "requests": [
+    {
+      "requestedURL": "https://www.suduguu.com/i/sor.aspx?key=%E9%83%BD%E5%B8%82",
+      "responseURL": "https://www.suduguu.com/i/sor.aspx?key=%E9%83%BD%E5%B8%82",
+      "code": 200,
+      "bytes": 9012
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/2418/",
+      "responseURL": "https://www.suduguu.com/2418/",
+      "code": 200,
+      "bytes": 71376
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/2418/",
+      "responseURL": "https://www.suduguu.com/2418/",
+      "code": 200,
+      "bytes": 71376
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/2418/1245658.html",
+      "responseURL": "https://www.suduguu.com/2418/1245658.html",
+      "code": 200,
+      "bytes": 6417
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/2418/1245658-2.html",
+      "responseURL": "https://www.suduguu.com/2418/1245658-2.html",
+      "code": 200,
+      "bytes": 6110
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/2418/1245658-3.html",
+      "responseURL": "https://www.suduguu.com/2418/1245658-3.html",
+      "code": 200,
+      "bytes": 6481
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/2418/1245658-4.html",
+      "responseURL": "https://www.suduguu.com/2418/1245658-4.html",
+      "code": 200,
+      "bytes": 6573
+    }
+  ]
+}

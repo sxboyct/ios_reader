@@ -1,0 +1,80 @@
+{
+  "suduguu-v1": {
+    "sourceName": "速读谷",
+    "sourceUrl": "https://www.suduguu.com/",
+    "sourceType": "text",
+    "enable": 1,
+    "weight": "9999",
+    "miniAppVersion": "2.56.1",
+    "lastModifyTime": "1795219200",
+    "desc": "搜索结果与最新更新首页已按当前页面结构编写；详情与目录共用书籍页，需在香色闺阁 2.56.1 实测。",
+    "searchBook": {
+      "actionID": "searchBook",
+      "parserID": "DOM",
+      "responseFormatType": "html",
+      "requestInfo": "@js:return {'url': 'https://www.suduguu.com/i/sor.aspx?key=' + encodeURIComponent(params.keyWord)};",
+      "list": "//div[@class='item']",
+      "bookName": "//h3/a/text()",
+      "author": "//div[@class='itemtxt']/p[2]/a/text()",
+      "cover": "//div[@class='item']/a/img/@src",
+      "detailUrl": "//div[@class='itemtxt']/h3/a/@href",
+      "validConfig": ""
+    },
+    "bookDetail": {
+      "actionID": "bookDetail",
+      "parserID": "DOM",
+      "responseFormatType": "html",
+      "requestInfo": "%@result",
+      "bookName": "//div[@class='itemtxt']/h1/a/text()",
+      "author": "//div[@class='itemtxt']/p[2]/a/text()",
+      "cover": "//div[@class='item']/a/img/@src",
+      "desc": "//div[@class='des']/p/text()",
+      "cat": "//div[@class='itemtxt']/p[1]/span[2]/text()",
+      "status": "//div[@class='itemtxt']/p[1]/span[1]/text()",
+      "wordCount": "//div[@class='itemtxt']/h1/i/text()",
+      "lastChapterTitle": "//div[@class='itemtxt']/ul/li[1]/a/text()",
+      "validConfig": ""
+    },
+    "chapterList": {
+      "actionID": "chapterList",
+      "parserID": "DOM",
+      "responseFormatType": "html",
+      "requestInfo": "%@result",
+      "list": "//div[@id='list']/ul/li/a",
+      "title": "//text()",
+      "url": "//@href",
+      "detailUrl": "//@href",
+      "validConfig": ""
+    },
+    "chapterContent": {
+      "actionID": "chapterContent",
+      "parserID": "DOM",
+      "responseFormatType": "html",
+      "requestInfo": "%@result",
+      "content": "//div[@class='con']//p/text()",
+      "validConfig": "",
+      "nextPageUrl": "//div[@class='prenext']//a[text()='下一页']/@href",
+      "moreKeys": {
+        "maxPage": 10
+      }
+    },
+    "bookWorld": {
+      "最新更新": {
+        "actionID": "bookWorld",
+        "parserID": "DOM",
+        "responseFormatType": "html",
+        "requestInfo": "https://www.suduguu.com/",
+        "list": "//div[@class='item']",
+        "bookName": "//h1/a/text() | //h3/a/text()",
+        "author": "//div[@class='itemtxt']/p[2]/a/text()",
+        "cover": "//img/@src",
+        "detailUrl": "//h1/a/@href | //h3/a/@href",
+        "_sIndex": 1,
+        "moreKeys": {
+          "requestFilters": ""
+        },
+        "validConfig": ""
+      }
+    }
+  }
+}
