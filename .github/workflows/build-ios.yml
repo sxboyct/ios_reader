@@ -1,0 +1,83 @@
+name: Build iOS Reader
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-reader-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios:
+    name: Test and package iOS only
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check Xcode and install XcodeGen
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          if ! command -v xcodegen >/dev/null 2>&1; then brew install xcodegen; fi
+          python3 scripts/check-project.py
+          node --experimental-vm-modules scripts/test-engine.mjs
+          xcodegen generate
+      - name: Select an available iPhone simulator
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/simulators.json"
+          SIMULATOR_ID=$(python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); print(next(device["udid"] for runtime,devices in data["devices"].items() if ".iOS-" in runtime for device in devices if device.get("isAvailable") and device["name"].startswith("iPhone")))' "$RUNNER_TEMP/simulators.json")
+          echo "SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$SIMULATOR_ID" || true
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+      - name: Run reader regression tests
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          xcodebuild test -project YingxiaReader.xcodeproj -scheme YingxiaReader \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -resultBundlePath build/ReaderTests.xcresult \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/test.log
+      - name: Build iOS device app without signing
+        run: |
+          set -euo pipefail
+          xcodebuild build -project YingxiaReader.xcodeproj -scheme YingxiaReader \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
+            2>&1 | tee build/build.log
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          mkdir -p build/package/Payload
+          ditto build/DerivedData/Build/Products/Release-iphoneos/YingxiaReader.app \
+            build/package/Payload/YingxiaReader.app
+          plutil -lint build/package/Payload/YingxiaReader.app/Info.plist
+          cd build/package
+          /usr/bin/zip -qry ../YingxiaReader-unsigned.ipa Payload
+      - name: Upload unsigned iOS app
+        uses: actions/upload-artifact@v4
+        with:
+          name: YingxiaReader-iOS-unsigned
+          path: build/YingxiaReader-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload test results and build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: YingxiaReader-build-diagnostics
+          path: |
+            build/*.log
+            build/ReaderTests.xcresult
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Explain installation requirement
+        run: |
+          echo '## iOS reader-only build' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Artifact: YingxiaReader-iOS-unsigned. The IPA is unsigned and requires your own Apple signing or sideloading setup before installation. No macOS, tvOS or Android app is built.' >> "$GITHUB_STEP_SUMMARY"
