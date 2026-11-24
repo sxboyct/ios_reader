@@ -29,8 +29,8 @@ targets:
       path: Config/iOS/Info.plist
       properties:
         CFBundleDisplayName: 映匣阅读
-        CFBundleShortVersionString: '1.2.0'
-        CFBundleVersion: '3'
+        CFBundleShortVersionString: '1.2.1'
+        CFBundleVersion: '4'
         LSSupportsOpeningDocumentsInPlace: true
         CFBundleDocumentTypes:
           - CFBundleTypeName: Book Source JSON

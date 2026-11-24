@@ -34,3 +34,25 @@ Device acceptance for this version:
 3. In each of six modes, turn forward/back, cross chapter boundaries, change font/size and reopen the book to check the saved place. Check a paragraph longer than one screen and iPad rotation.
 4. Choose suduguu.json with the native file picker. If the provider disables it, select its containing folder and import it from the in-app list; repeat from Files share/open. Check cancel, empty folder, wrong file type and not-yet-downloaded cloud files.
 5. Import/switch/remove a font from reading settings and check it after relaunch.
+
+
+## 1.2.1 / build 4 — 2026-11-24
+
+Changes:
+- Slide mode uses a horizontal pan with two adjacent page canvases following the finger. Only release beyond 50% of the reading viewport commits; equality, shorter flicks, and cancellation return to the original page. Velocity never bypasses the threshold. Default rightward movement opens the next page, with a direction toggle in settings. Other turn modes remain separate.
+- Settings use an independent solid-color overlay with a draggable header and a scrolling form. Resizing the panel does not resize/reflow the reader behind it or apply modal dimming. Font-size/spacing reflow is coalesced for 120 ms. The font screen uses the same background.
+- Font import normalizes file paths before comparison, so differing base-relative/absolute URL representations cannot classify the new file as an existing duplicate. Same-name re-imports select the existing file. Failed persisted font files are exposed with a delete action. Import errors also refresh this inventory; font loading runs off the UI actor.
+
+Local verification:
+- PASS: scripts/check-project.py.
+- PASS: bundled Legado engine regression (scripts/test-engine.mjs).
+- PASS: Swift tree-sitter syntax parsing for the 16 App/core/test files checked. This is NOT Swift compilation or type checking.
+- PASS: YAML parsing; version 1.2.1 / build 4; existing Actions workflow still includes the native test target.
+- Added native tests: exact-half/over-half/cancelled/reversed-direction gesture decisions; equivalent font directory URL representations; same-name fonts with different bytes; invalid persisted font files remain visible and removable.
+- NOT RUN: Swift compiler, native tests, CoreText runtime registration, simulator, IPA build, physical-device UI/performance. Windows has no swift/xcodebuild available.
+
+Device acceptance (iPhone 17 and the user's reported iOS 26.6.1):
+1. With slide mode, drag right 30%, exactly 50%, and 70%; release. The first two must return to the same page; only the third advances. Repeat leftward for the previous page, rapidly flick under half width, cancel with an interruption, reverse a drag before releasing, and toggle the reading direction.
+2. Repeat at chapter edges and in the first/last chapter. Adjacent chapters load only after an accepted drag; short/cancelled drags must preserve position. Confirm tap turns, other turn modes, rotation, and disabled animations.
+3. Open settings in paper/day/night themes. Drag the header repeatedly and scroll the form. The underlying page must keep its position, typography, and background. Navigate to fonts/back. Check size/spacing sliders and reopen/close settings.
+4. Upgrade retaining app data. Open fonts, re-import the supplied TTF twice (including a renamed copy), select System then the imported font, and restart. A valid font must stay visible and selectable. Any unreadable/unregisterable leftover must appear under the repair section and be removable. No user font is bundled in the source archive.

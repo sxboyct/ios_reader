@@ -36,8 +36,37 @@ struct ImportAndFontTests {
         let restored = ReaderFontStore(directory: directory).restore()
         #expect(restored.failures.isEmpty)
         #expect(restored.faces == faces)
+        #expect(restored.problems.isEmpty)
+        // Foundation enumeration can return an absolute URL while callers use a base-relative URL.
+        let equivalent = URL(fileURLWithPath: directory.lastPathComponent + "/./", isDirectory: true,
+            relativeTo: directory.deletingLastPathComponent())
+        #expect(try ReaderFontStore(directory: equivalent).add(fixture) == faces)
+        // Different file bytes/extension, same PostScript name: reuse the visible installed face.
+        let renamed = directory.deletingLastPathComponent().appendingPathComponent(UUID().uuidString + ".otf")
+        defer { try? FileManager.default.removeItem(at: renamed) }
+        var duplicate = try Data(contentsOf: fixture)
+        duplicate.append(contentsOf: [0, 0, 0, 0])
+        try duplicate.write(to: renamed)
+        #expect(try store.add(renamed) == faces)
+        #expect(try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil).count == 1)
         try store.remove(first.file)
         #expect(store.restore().faces.isEmpty)
+    }
+
+    @Test func leftoverInvalidFontRemainsVisibleAndRemovable() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let broken = directory.appendingPathComponent("old-font.ttf")
+        try Data("interrupted import".utf8).write(to: broken)
+        let store = ReaderFontStore(directory: directory)
+        let restored = store.restore()
+        #expect(restored.faces.isEmpty)
+        #expect(restored.failures.count == 1)
+        let problem = try #require(restored.problems.first)
+        #expect(problem.file.lastPathComponent == "old-font.ttf")
+        try store.remove(problem.file)
+        #expect(store.restore().problems.isEmpty)
     }
 
     @Test func invalidFilesAreRejectedAfterBroadSelection() throws {

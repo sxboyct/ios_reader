@@ -11,6 +11,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
     let animated: Bool
     let tapFraction: Double
     let tapsEnabled: Bool
+    let slideForwardRight: Bool
     var moved: (Int, Int) -> Void
     var boundary: (Bool) -> Void
     var center: () -> Void
@@ -58,12 +59,21 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         private var swipeStartPage = 0
         private var restoringScroll = false
         private var pendingScrollRestore = false
+        private var slidePan: UIPanGestureRecognizer?
+        private var slidePreview: PageCanvas?
+        private var slideTarget: Int?
+        private var slideSign: CGFloat = 1
+        private var draggingSlide = false
 
         override func viewDidLoad() {
             super.viewDidLoad()
             view.clipsToBounds = true
             let tap = UITapGestureRecognizer(target: self, action: #selector(tapped(_:)))
             tap.delegate = self; view.addGestureRecognizer(tap)
+            let pan = UIPanGestureRecognizer(target: self, action: #selector(draggedSlide(_:)))
+            pan.maximumNumberOfTouches = 1; pan.delegate = self
+            view.addGestureRecognizer(pan); slidePan = pan
+            tap.require(toFail: pan)
             for direction: UISwipeGestureRecognizer.Direction in [.left, .right, .up, .down] {
                 let swipe = UISwipeGestureRecognizer(target: self, action: #selector(swiped(_:)))
                 swipe.direction = direction; swipe.delegate = self; view.addGestureRecognizer(swipe)
@@ -93,12 +103,15 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         }
         override func viewDidLayoutSubviews() {
             super.viewDidLayoutSubviews()
-            canvas?.frame = view.bounds; curl?.view.frame = view.bounds; textView?.frame = view.bounds
+            if !animating { canvas?.frame = view.bounds }
+            curl?.view.frame = view.bounds; textView?.frame = view.bounds
             if pendingScrollRestore, let textView, view.bounds.width > 0, view.bounds.height > 0 {
                 pendingScrollRestore = false; restoreScroll(textView)
             }
         }
         private func rebuild() {
+            draggingSlide = false; slideTarget = nil
+            slidePreview?.removeFromSuperview(); slidePreview = nil
             canvas?.removeFromSuperview(); canvas = nil
             textView?.removeFromSuperview(); textView = nil
             if let curl {
@@ -173,7 +186,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             let next = PageCanvas(layout: parent.layout, page: target, color: parent.background)
             next.frame = view.bounds
             let distance = parent.style == .vertical ? view.bounds.height : view.bounds.width
-            let translation = (forward ? 1.0 : -1.0) * distance
+            let forwardSign = parent.style == .slide && parent.slideForwardRight ? -1.0 : 1.0
+            let translation = (forward ? forwardSign : -forwardSign) * distance
             let vector = parent.style == .vertical ? CGAffineTransform(translationX: 0, y: translation) : CGAffineTransform(translationX: translation, y: 0)
             if parent.style == .fade { next.alpha = 0; view.addSubview(next) }
             else if parent.style == .cover && !forward { view.insertSubview(next, belowSubview: old) }
@@ -188,6 +202,63 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 guard let self, self.generation == token else { next.removeFromSuperview(); return }
                 self.canvas = next; self.animating = false; self.commit(target)
             }
+        }
+        @objc private func draggedSlide(_ gesture: UIPanGestureRecognizer) {
+            guard let parent = parentValue, parent.style == .slide, let old = canvas else { return }
+            let width = max(1, view.bounds.width)
+            let delta = max(-width, min(width, gesture.translation(in: view).x))
+            switch gesture.state {
+            case .began:
+                guard !animating else { return }
+                draggingSlide = true; animating = true
+                updateSlide(delta: delta, width: width, old: old, parent: parent)
+            case .changed:
+                guard draggingSlide else { return }
+                updateSlide(delta: delta, width: width, old: old, parent: parent)
+            case .ended, .cancelled, .failed:
+                guard draggingSlide else { return }
+                draggingSlide = false
+                updateSlide(delta: delta, width: width, old: old, parent: parent)
+                let forward = ReaderSlideTurn.committedForward(translation: Double(delta), width: Double(width),
+                    forwardRight: parent.slideForwardRight, cancelled: gesture.state != .ended)
+                let preview = slidePreview
+                let target = slideTarget
+                let token = generation
+                let commitPage = forward != nil && preview != nil
+                let endX: CGFloat = commitPage ? slideSign * width : 0
+                let duration = parent.animated ? (forward == nil ? 0.18 : 0.22) : 0
+                UIView.animate(withDuration: duration, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) {
+                    old.transform = CGAffineTransform(translationX: endX, y: 0)
+                    preview?.transform = CGAffineTransform(translationX: endX - self.slideSign * width, y: 0)
+                } completion: { [weak self] _ in
+                    guard let self, self.generation == token else { preview?.removeFromSuperview(); return }
+                    self.slidePreview = nil; self.slideTarget = nil; self.animating = false
+                    if commitPage, let preview, let target {
+                        old.removeFromSuperview(); preview.transform = .identity
+                        self.canvas = preview; self.commit(target)
+                    } else {
+                        old.transform = .identity; preview?.removeFromSuperview()
+                        if let forward { self.parentValue?.boundary(forward) }
+                    }
+                }
+            default: break
+            }
+        }
+        private func updateSlide(delta: CGFloat, width: CGFloat, old: PageCanvas, parent: ReaderPageSurface) {
+            slideSign = delta < 0 ? -1 : 1
+            let forward = (slideSign > 0) == parent.slideForwardRight
+            let target = currentPage + (forward ? 1 : -1)
+            if slideTarget != target {
+                slidePreview?.removeFromSuperview(); slidePreview = nil; slideTarget = target
+                if target >= 0 && target < parent.layout.count {
+                    let preview = PageCanvas(layout: parent.layout, page: target, color: parent.background)
+                    preview.frame = view.bounds; view.addSubview(preview); slidePreview = preview
+                }
+            }
+            // At chapter boundaries, resist the drag instead of showing an empty page.
+            let x: CGFloat = parent.animated ? (slidePreview == nil ? delta * 0.18 : delta) : 0
+            old.transform = CGAffineTransform(translationX: x, y: 0)
+            slidePreview?.transform = CGAffineTransform(translationX: x - slideSign * width, y: 0)
         }
         @objc private func tapped(_ gesture: UITapGestureRecognizer) {
             guard let parent = parentValue else { return }
@@ -218,12 +289,18 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             }
         }
         func gestureRecognizerShouldBegin(_ gesture: UIGestureRecognizer) -> Bool {
-            if gesture is UISwipeGestureRecognizer { return curl == nil && textView == nil }
+            if gesture === slidePan {
+                guard currentStyle == .slide, !animating, let pan = gesture as? UIPanGestureRecognizer else { return false }
+                let velocity = pan.velocity(in: view)
+                return abs(velocity.x) > abs(velocity.y)
+            }
+            if gesture is UISwipeGestureRecognizer { return currentStyle != .slide && curl == nil && textView == nil }
             if gesture is UIPanGestureRecognizer { return curl != nil }
             return true
         }
         func gestureRecognizer(_ gesture: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
-            gesture is UIPanGestureRecognizer || other is UIPanGestureRecognizer
+            if gesture === slidePan || other === slidePan { return false }
+            return gesture is UIPanGestureRecognizer || other is UIPanGestureRecognizer
         }
         func pageViewController(_ pageViewController: UIPageViewController, viewControllerBefore controller: UIViewController) -> UIViewController? {
             guard let page = (controller as? PageHost)?.index, page > 0 else { return nil }

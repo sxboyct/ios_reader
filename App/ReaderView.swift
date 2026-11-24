@@ -33,6 +33,7 @@ struct ReaderView: View {
     @AppStorage("reader.script") private var script = ""
     @AppStorage("reader.turnStyle") private var turnStyle = ReaderTurnStyle.slide.rawValue
     @AppStorage("reader.turnAnimation") private var turnAnimation = true
+    @AppStorage("reader.slideForwardRight") private var slideForwardRight = true
     @AppStorage("reader.tapTurns") private var tapTurns = true
     @AppStorage("reader.tapFraction") private var tapFraction = 0.3
     @AppStorage("reader.hideStatusBar") private var hideStatusBar = true
@@ -63,7 +64,7 @@ struct ReaderView: View {
                     if let layout, content != nil {
                         ReaderPageSurface(layout: layout, style: style, offset: characterOffset,
                             background: UIColor(background), animated: turnAnimation && !reduceMotion,
-                            tapFraction: tapFraction, tapsEnabled: tapTurns,
+                            tapFraction: tapFraction, tapsEnabled: tapTurns, slideForwardRight: slideForwardRight,
                             moved: moved, boundary: boundary, center: { controls.toggle() })
                     } else if let failure {
                         ContentUnavailableView {
@@ -81,6 +82,11 @@ struct ReaderView: View {
                 .frame(width: size.width, height: size.height)
                 .padding(.horizontal, 24).padding(.vertical, 14)
                 .task(id: LayoutKey(content: content, revision: revision, script: script, size: size, font: fontName, fontSize: fontSize, spacing: lineSpacing, dark: dark)) {
+                    // Coalesce slider changes so typography does not block every drag event.
+                    if layout != nil {
+                        do { try await Task.sleep(for: .milliseconds(120)) } catch { return }
+                    }
+                    guard !Task.isCancelled else { return }
                     reflow(size: size)
                 }
             }
@@ -112,7 +118,12 @@ struct ReaderView: View {
         }
         .onDisappear { saveTask?.cancel(); record() }
         .onChange(of: scenePhase) { _, value in if value != .active { saveTask?.cancel(); record() } }
-        .sheet(isPresented: $settings, onDismiss: { controls = false }) { readingSettings }
+        .overlay {
+            if settings {
+                ReaderSettingsPanel(background: background, close: { settings = false }) { readingSettings }
+            }
+        }
+        .onChange(of: settings) { _, shown in if shown { controls = false } }
         .sheet(isPresented: $contents) {
             NavigationStack {
                 List(chapters) { chapter in
@@ -172,6 +183,11 @@ struct ReaderView: View {
                             }.buttonStyle(.plain)
                         }
                     }
+                    if style == .slide {
+                        Toggle("右滑进入下一页", isOn: $slideForwardRight)
+                        Text("页面跟随手指移动，松手时超过半屏才翻页，否则回到原页。关闭上方选项后，左滑进入下一页。")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
                     Toggle("翻页动画", isOn: $turnAnimation)
                     Toggle("点击左右区域翻页", isOn: $tapTurns)
                     if tapTurns {
@@ -187,7 +203,7 @@ struct ReaderView: View {
                     Toggle("显示阅读进度", isOn: $showProgress)
                 }
                 Section("文字") {
-                    NavigationLink("导入与更换字体") { FontSettingsView() }
+                    NavigationLink("导入与更换字体") { FontSettingsView(background: background) }
                     LabeledContent("字号", value: "\(Int(fontSize))")
                     Slider(value: $fontSize, in: 14...34, step: 1)
                     LabeledContent("行距", value: "\(Int(lineSpacing))")
@@ -197,8 +213,18 @@ struct ReaderView: View {
                     }
                 }
                 Picker("主题", selection: $theme) { ForEach(["自动", "纸张", "日间", "夜间"], id: \.self) { Text($0) } }
-            }.navigationTitle("阅读设置").toolbar { Button("完成") { settings = false } }
-        }.presentationDetents([.medium, .large])
+            }
+            .scrollContentBackground(.hidden)
+            .background(background)
+            .navigationTitle("阅读设置")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.visible, for: .navigationBar)
+            .toolbarBackground(background, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbar { Button("完成") { settings = false } }
+        }
+        .environment(\.colorScheme, dark ? .dark : .light)
+        .background(background)
     }
     private var bookmarkList: some View {
         NavigationStack {
