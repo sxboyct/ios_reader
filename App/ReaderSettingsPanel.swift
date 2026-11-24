@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import TVCore
 
 /// Only this panel changes height while dragging; the page viewport and TextKit layout stay fixed.
 struct ReaderSettingsPanel<Content: View>: View {
@@ -66,6 +67,11 @@ private struct ReaderPanelGestureHost<Content: View>: UIViewControllerRepresenta
     @MainActor final class Controller: UIViewController, UIGestureRecognizerDelegate {
         var value: ReaderPanelGestureHost
         let host: UIHostingController<Content>
+        private var drag = ReaderPanelDrag()
+        private weak var scrolling: UIScrollView?
+        private var suspendedScrolling = false
+        private var resizing = false
+        private var distance: CGFloat = 0
 
         init(_ value: ReaderPanelGestureHost) {
             self.value = value
@@ -89,18 +95,51 @@ private struct ReaderPanelGestureHost<Content: View>: UIViewControllerRepresenta
         func gestureRecognizerShouldBegin(_ gesture: UIGestureRecognizer) -> Bool {
             guard let pan = gesture as? UIPanGestureRecognizer else { return false }
             let velocity = pan.velocity(in: view)
-            return abs(velocity.y) > abs(velocity.x) && (!value.expanded || pan.location(in: view).y <= 30)
+            return abs(velocity.y) > abs(velocity.x) && (!value.expanded || velocity.y > 0)
         }
         func gestureRecognizer(_ gesture: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
             true
         }
         @objc private func dragged(_ pan: UIPanGestureRecognizer) {
             switch pan.state {
-            case .began, .changed: value.changed(pan.translation(in: view.window).y)
-            case .ended: value.ended(pan.translation(in: view.window).y, pan.velocity(in: view.window).y)
-            case .cancelled, .failed: value.ended(0, 0)
+            case .began:
+                drag = ReaderPanelDrag(); resizing = false; distance = 0
+                scrolling = scrollView(at: pan.location(in: view))
+                updateDrag(pan)
+            case .changed: updateDrag(pan)
+            case .ended:
+                updateDrag(pan)
+                restoreScrolling()
+                value.ended(distance, resizing ? pan.velocity(in: view.window).y : 0)
+            case .cancelled, .failed:
+                restoreScrolling(); value.ended(0, 0)
             default: break
             }
+        }
+        private func updateDrag(_ pan: UIPanGestureRecognizer) {
+            let scrollDistance = scrolling.map { max(0, $0.contentOffset.y + $0.adjustedContentInset.top) } ?? 0
+            guard let delta = drag.update(translation: Double(pan.translation(in: view.window).y),
+                expanded: value.expanded, scrollDistance: Double(scrollDistance)) else { return }
+            resizing = true; distance = CGFloat(delta)
+            if value.expanded, let scrolling {
+                if scrolling.isScrollEnabled {
+                    suspendedScrolling = true; scrolling.isScrollEnabled = false
+                }
+                scrolling.setContentOffset(CGPoint(x: scrolling.contentOffset.x, y: -scrolling.adjustedContentInset.top), animated: false)
+            }
+            value.changed(distance)
+        }
+        private func scrollView(at point: CGPoint) -> UIScrollView? {
+            var target = view.hitTest(point, with: nil)
+            while let current = target {
+                if let scroll = current as? UIScrollView { return scroll }
+                target = current.superview
+            }
+            return nil
+        }
+        private func restoreScrolling() {
+            if suspendedScrolling { scrolling?.isScrollEnabled = true }
+            suspendedScrolling = false; scrolling = nil
         }
     }
 }

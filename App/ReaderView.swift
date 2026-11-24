@@ -15,6 +15,7 @@ struct ReaderView: View {
     @State private var resumePosition: Double
     @State private var resumeOffset: Int?
     @State private var content: NovelContent?
+    @State private var contentRevision = UUID()
     @State private var layout: ReaderTextLayout?
     @State private var characterOffset = 0
     @State private var page = 0
@@ -63,10 +64,14 @@ struct ReaderView: View {
         ZStack {
             background.ignoresSafeArea()
             GeometryReader { geometry in
-                let size = CGSize(width: max(80, geometry.size.width - 48), height: max(100, geometry.size.height - 28))
+                let safeArea = geometry.safeAreaInsets
+                let viewport = ReaderViewport(safeAreaSize: geometry.size,
+                    safeAreaInsets: UIEdgeInsets(top: safeArea.top, left: safeArea.leading,
+                        bottom: safeArea.bottom, right: safeArea.trailing))
+                ZStack(alignment: .topLeading) {
                 Group {
                     if let layout, content != nil {
-                        ReaderPageSurface(layout: layout, style: style, offset: characterOffset,
+                        ReaderPageSurface(layout: layout, viewport: viewport, style: style, offset: characterOffset,
                             background: UIColor(background), backgroundImage: backgrounds.image,
                             backgroundOpacity: backgroundOpacity, animated: turnAnimation && !reduceMotion,
                             tapFraction: tapFraction, tapsEnabled: tapTurns, slideForwardRight: slideForwardRight,
@@ -84,15 +89,25 @@ struct ReaderView: View {
                             .contentShape(Rectangle()).onTapGesture { controls = true }
                     }
                 }
-                .frame(width: size.width, height: size.height)
-                .padding(.horizontal, 24).padding(.vertical, 14)
-                .task(id: LayoutKey(content: content, revision: revision, script: script, size: size, font: fontName, fontSize: fontSize, spacing: lineSpacing, dark: dark)) {
+                .frame(width: viewport.size.width, height: viewport.size.height)
+                .background {
+                    if layout == nil, let image = backgrounds.image {
+                        Image(uiImage: image).resizable().scaledToFill()
+                            .frame(width: viewport.size.width, height: viewport.size.height)
+                            .clipped().opacity(backgroundOpacity)
+                    }
+                }
+                .offset(x: viewport.origin.x, y: viewport.origin.y)
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
+                .task(id: LayoutKey(contentRevision: contentRevision, revision: revision, script: script,
+                    size: viewport.contentFrame.size, font: fontName, fontSize: fontSize, spacing: lineSpacing, dark: dark)) {
                     // Coalesce slider changes so typography does not block every drag event.
                     if layout != nil {
                         do { try await Task.sleep(for: .milliseconds(120)) } catch { return }
                     }
-                    guard !Task.isCancelled else { return }
-                    reflow(size: size)
+                    guard !Task.isCancelled, geometry.size.width > 0, geometry.size.height > 0 else { return }
+                    reflow(size: viewport.contentFrame.size)
                 }
             }
             if showProgress && !controls {
@@ -121,8 +136,10 @@ struct ReaderView: View {
             try? await Task.sleep(for: .seconds(4))
             if !Task.isCancelled { notice = nil }
         }
-        .onDisappear { saveTask?.cancel(); record() }
-        .onChange(of: scenePhase) { _, value in if value != .active { saveTask?.cancel(); record() } }
+        .onDisappear { saveTask?.cancel(); record(); library.flushShelf() }
+        .onChange(of: scenePhase) { _, value in
+            if value != .active { saveTask?.cancel(); record(); library.flushShelf() }
+        }
         .overlay {
             if settings {
                 ReaderSettingsPanel(background: background, close: { settings = false }) { readingSettings }
@@ -183,6 +200,24 @@ struct ReaderView: View {
     private var readingSettings: some View {
         NavigationStack {
             Form {
+                Section("背景") {
+                    HStack {
+                        PhotosPicker(selection: $backgroundSelection, matching: .images) {
+                            Label(backgrounds.image == nil ? "选择背景图" : "更换背景图", systemImage: "photo")
+                        }.disabled(backgrounds.busy)
+                        Spacer()
+                        Button("删除背景图", role: .destructive) { backgrounds.remove() }
+                            .disabled(backgrounds.image == nil || backgrounds.busy)
+                    }.buttonStyle(.borderless)
+                    if backgrounds.busy { ProgressView("正在保存背景图片…") }
+                    if backgrounds.image != nil {
+                        LabeledContent("图片浓度", value: "\(Int(backgroundOpacity * 100))%")
+                        Slider(value: $backgroundOpacity, in: 0.1...1, step: 0.05)
+                    }
+                    Picker("主题", selection: $theme) { ForEach(["自动", "纸张", "日间", "夜间"], id: \.self) { Text($0) } }
+                    Text("背景覆盖整个屏幕。删除后恢复主题底色，原照片不受影响。")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
                 Section("翻页方式") {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
                         ForEach(ReaderTurnStyle.allCases) { item in
@@ -224,22 +259,6 @@ struct ReaderView: View {
                         Text("原文").tag(""); Text("简体").tag("simplified"); Text("繁体").tag("traditional")
                     }
                 }
-                Section("背景") {
-                    Picker("主题", selection: $theme) { ForEach(["自动", "纸张", "日间", "夜间"], id: \.self) { Text($0) } }
-                    PhotosPicker(selection: $backgroundSelection, matching: .images) {
-                        Label(backgrounds.image == nil ? "选择背景图片" : "更换背景图片", systemImage: "photo")
-                    }.disabled(backgrounds.busy)
-                    if backgrounds.busy { ProgressView("正在保存背景图片…") }
-                    if let image = backgrounds.image {
-                        Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 120)
-                            .frame(maxWidth: .infinity).accessibilityLabel("当前背景图片")
-                        LabeledContent("图片浓度", value: "\(Int(backgroundOpacity * 100))%")
-                        Slider(value: $backgroundOpacity, in: 0.1...1, step: 0.05)
-                        Button("移除背景图片", role: .destructive) { backgrounds.remove() }.disabled(backgrounds.busy)
-                    }
-                    Text("图片保存在本机，重启后仍然生效。调低图片浓度可提高文字可读性。")
-                        .font(.footnote).foregroundStyle(.secondary)
-                }
             }
             .scrollContentBackground(.hidden)
             .background(background)
@@ -279,7 +298,7 @@ struct ReaderView: View {
         do {
             let loaded = try await NovelBooks.shared.content(book, chapters: chapters, index: requestedIndex)
             guard !Task.isCancelled, requestedIndex == index else { return }
-            content = loaded
+            content = loaded; contentRevision = UUID()
             await NovelBooks.shared.prefetch(book, chapters: chapters, after: requestedIndex)
         } catch { if !Task.isCancelled { failure = error.localizedDescription } }
     }
@@ -335,7 +354,7 @@ struct ReaderView: View {
         resumePosition = position; resumeOffset = offset; index = next; revision = UUID()
     }
     private struct LayoutKey: Equatable {
-        let content: NovelContent?
+        let contentRevision: UUID
         let revision: UUID
         let script: String
         let size: CGSize

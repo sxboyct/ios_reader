@@ -1,6 +1,36 @@
 # Validation record
 
+## 1.3.1 / build 6 — 2026-11-24
+
+Changes following the device screenshot:
+- Full-screen viewport dimensions include safe-area insets. Only the text container is inset; backgrounds and every translated/faded/curled page occupy the complete viewport. Scroll mode retains a safe-area text frame over the full-screen backdrop.
+- Moved the reflow task from the conditional content group to a stable container and replaced chapter-value task identity with a content revision UUID. A loading-to-reader transition no longer starts a second layout task for the same chapter.
+- Added a shared opaque background raster and a bounded three-page render cache. The current and adjacent pages are prepared before the new chapter's page surface is shown; subsequent cache warming is cancelled during gestures and delayed until after a completed turn. Unchanged reader updates do not redraw the background.
+- Moved shelf JSON encoding and writing to a serial background queue. Exit/background events flush outstanding writes so queued progress is not intentionally left pending at suspension.
+- The first reading-settings section has a persistent visible delete-background button beside photo selection. It removes the app's saved image and restores the theme without modifying the original photo.
+- Expanded settings accept downward drags from the whole panel. A scrolled list returns to its top before the continuing drag resizes the panel; upward scrolling and horizontal sliders remain separate.
+- Preserved the Intel Actions runner, bundle identifier and unsigned IPA packaging.
+
+Validation:
+- PASS: project/resource checks and offline Legado/Xiangse engine regressions.
+- PASS: local Swift syntax parsing; project/workflow YAML and version checks. Syntax parsing is not Swift compilation or type checking.
+- Added native regression cases for portrait/landscape safe-area geometry, full-screen image coverage at all four corners, cached-image identity/three-page memory bounds, and list-scroll-to-panel-drag handoff.
+- NOT RUN locally: Xcode compilation, native tests, simulator/device rendering, frame-time profiling and IPA packaging. Windows has no Xcode. Device smoothness is not claimed as measured.
+
+Required checks after Actions builds successfully:
+1. On the device from the screenshot, verify the photo and moving page reach all four screen edges, while text avoids the camera/home areas. Repeat with no photo, rotation, each turn style and Reduce Motion.
+2. Enter a new chapter and immediately flip several pages forward/back. Verify no delayed layout reset, page jump or dropped progress. Repeat with a long chapter, imported font and large photo.
+3. Open settings and confirm red 删除背景图 is visible at the top. Delete, restart, and verify the image stays removed; import another photo and repeat.
+4. Expand settings, drag down from the title/blank space/list row, then scroll the list away from its top and drag back to the top and onward. Confirm both scroll and resize work without needing the handle.
+5. Exit/reopen and background/relaunch after a turn. Confirm the last stored character offset and existing library/fonts remain intact.
+
 ## 1.3.0 / build 5 — 2026-11-24
+
+Runner queue follow-up:
+- Public repository run #5 reported: "There is no available hosted runner capacity for the selected runner type right now." Its runner type was macOS 26 ARM64. This failed before any checkout/test/build step.
+- Changed the local workflow label from `macos-26` to `macos-26-intel`, retaining the iOS test/build/package steps. This selects the standard Intel pool rather than the affected ARM pool; it does not guarantee immediate runner availability.
+- Commit the workflow change and start a new workflow_dispatch run. Re-running an old run continues to reference its original workflow commit.
+- No successful remote Xcode build is claimed for this change.
 
 Current changes (supersede the historical gesture/import checklists below):
 - Display name is 映夏阅读. Bundle ID, scheme, Actions workflow and unsigned IPA artifact names are unchanged.

@@ -40,6 +40,7 @@ struct ReaderApp: App {
 
 @MainActor @Observable
 final class ReaderLibrary {
+    private let shelfWrites = DispatchQueue(label: "reader.shelf-writes", qos: .utility)
     var shelf = NovelLibrary.load("shelf.json", as: [NovelLibrary.ShelfBook].self) ?? []
     var searchHistory = ReaderSearchHistory(NovelLibrary.load("search-history.json", as: [String].self) ?? [])
     var sources: [NovelSource] = []
@@ -48,11 +49,16 @@ final class ReaderLibrary {
     func entry(_ book: NovelBook) -> NovelLibrary.ShelfBook? { shelf.first { $0.id == book.match } }
     func save(_ entry: NovelLibrary.ShelfBook) {
         shelf.removeAll { $0.id == entry.id }; shelf.insert(entry, at: 0)
-        NovelLibrary.save(shelf, as: "shelf.json")
+        persistShelf()
     }
     func remove(_ book: NovelBook) {
-        shelf.removeAll { $0.id == book.match }; NovelLibrary.save(shelf, as: "shelf.json")
+        shelf.removeAll { $0.id == book.match }; persistShelf()
     }
+    private func persistShelf() {
+        let snapshot = shelf
+        shelfWrites.async { NovelLibrary.save(snapshot, as: "shelf.json") }
+    }
+    func flushShelf() { shelfWrites.sync {} }
     func recordSearch(_ keyword: String) {
         searchHistory.record(keyword)
         NovelLibrary.save(searchHistory.entries, as: "search-history.json")
