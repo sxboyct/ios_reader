@@ -1,6 +1,6 @@
 import UIKit
 
-public struct ReaderViewport: Equatable {
+public struct ReaderViewport: Equatable, Sendable {
     public let size: CGSize
     public let contentFrame: CGRect
     public let origin: CGPoint

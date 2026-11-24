@@ -1,5 +1,29 @@
 # Validation record
 
+## 1.3.2 / build 7 — 2026-11-25
+
+Changes for chapter-transition stalls and incomplete later pages:
+- Replaced mutable TextKit pagination containers with immutable CoreText frames. Each next page begins at the end of the preceding frame's actually visible UTF-16 range; drawing reuses that exact frame rather than laying out again. A complete, contiguous range covering the final character is required before displaying a chapter.
+- Moved script conversion, chapter typesetting, background rasterization and page-image rendering off the main actor. A per-layout serial executor confines CoreText frame creation and use; the bounded image cache is lock-protected. UIKit transitions only read prepared images and request missing images asynchronously.
+- Prepares the next chapter's layout and opening pages, not only its network content. Chapter changes bypass the settings debounce. While a chapter is preparing, the old page remains visible with a preparation indicator and cannot turn.
+- Chapter/revision/layout identity checks discard stale load results and callbacks. A new layout and matching renderer are published together; pending turns are invalidated when the surface changes or is removed. Reflow preserves the stored character anchor.
+- Retains 1.3.1 full-screen backgrounds/transitions, background deletion, panel gestures and the existing Intel Actions workflow. Bundle identifier and unsigned artifact names are unchanged.
+
+Local verification:
+- PASS: `python scripts/check-project.py`.
+- PASS: `node --experimental-vm-modules scripts/test-engine.mjs`.
+- PASS: `node --experimental-vm-modules scripts/test-xiangse.mjs` (offline fixtures).
+- PASS: tree-sitter syntax parsing for 26 App/reader-core/reader-test Swift files. This is not Swift compilation, type checking or execution of the native tests.
+- PASS: project/workflow YAML; version 1.3.2 / build 7; existing simulator-test/device-build/unsigned-package workflow retained.
+- Added native tests for consecutive chapters, long paragraphs, empty paragraphs, emoji/combining characters, large fonts, visible CoreText ranges and full character reconstruction. Rendering tests compare every page against independently created reference frames, revisit pages after eviction, check worker execution, cache bounds and chapter image isolation.
+- NOT RUN: native Swift tests, Xcode compilation, simulator/device testing, frame-time profiling, remote Actions or IPA packaging. This environment is Windows without Xcode. No measured device smoothness or successful IPA build is claimed.
+
+Required acceptance after Actions passes:
+1. Open the reported tenth chapter, turn from page 1 to page 2 immediately, then continue through its final page into chapter 11 and turn several more pages. Repeat with cached content/offline so network time is excluded; check for dropped touches and freezes.
+2. Compare the last sentences of each page with the first sentences of the next page and with the source chapter, especially the second page and the chapter's final sentence. Check no missing, duplicated or blank text. Repeat backward through the boundary.
+3. Repeat with the imported font, largest available font/line spacing, long single paragraphs and portrait/landscape rotation. Change font/rotation while preparing a chapter and rapidly switch chapters; verify stale pages do not replace the selected chapter.
+4. Verify progress restoration after exit/background, all turn styles, full-screen image backgrounds and deletion, and upward/downward settings-panel drags. Profile device frame times if a stall remains; include chapter/source, font and turn style when reporting it.
+
 ## 1.3.1 / build 6 — 2026-11-24
 
 Changes following the device screenshot:

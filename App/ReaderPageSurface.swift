@@ -5,6 +5,7 @@ import TVCore
 /// Native page rendering and gestures. Only a completed turn commits a new reading position.
 struct ReaderPageSurface: UIViewControllerRepresentable {
     let layout: ReaderTextLayout
+    let renderer: ReaderPageRenderer
     let viewport: ReaderViewport
     let style: ReaderTurnStyle
     let offset: Int
@@ -20,6 +21,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
     var center: () -> Void
     func makeUIViewController(context: Context) -> Controller { Controller() }
     func updateUIViewController(_ controller: Controller, context: Context) { controller.configure(self) }
+    static func dismantleUIViewController(_ controller: Controller, coordinator: ()) { controller.invalidate() }
 
     @MainActor final class PageCanvas: UIImageView {
         init(layout: ReaderTextLayout, page: Int, image: UIImage?) {
@@ -48,9 +50,6 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         private let backdrop = UIImageView(frame: .zero)
         private var renderer: ReaderPageRenderer?
         private var currentViewport: ReaderViewport?
-        private var currentBackground: UIColor?
-        private var currentBackgroundImage: UIImage?
-        private var currentBackgroundOpacity = -1.0
         private var warmTask: Task<Void, Never>?
         private var currentLayout: ReaderTextLayout?
         private var currentStyle: ReaderTurnStyle?
@@ -93,13 +92,9 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             loadViewIfNeeded()
             parentValue = parent; view.backgroundColor = parent.background
             let renderingChanged = currentLayout !== parent.layout || currentViewport != parent.viewport
-                || currentBackground?.isEqual(parent.background) != true
-                || currentBackgroundImage !== parent.backgroundImage || currentBackgroundOpacity != parent.backgroundOpacity
+                || renderer !== parent.renderer
             if renderingChanged {
-                currentViewport = parent.viewport; currentBackground = parent.background
-                currentBackgroundImage = parent.backgroundImage; currentBackgroundOpacity = parent.backgroundOpacity
-                renderer = ReaderPageRenderer(layout: parent.layout, viewport: parent.viewport, color: parent.background,
-                    image: parent.backgroundImage, opacity: parent.backgroundOpacity, scale: view.window?.screen.scale ?? 0)
+                currentViewport = parent.viewport; renderer = parent.renderer
                 backdrop.image = renderer?.background
             }
             if renderingChanged || currentStyle != parent.style || currentAnimation != parent.animated {
@@ -139,7 +134,6 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             }
             curl = nil
             guard let parent = parentValue else { return }
-            if parent.style != .scroll { renderer?.prepare(around: currentPage) }
             if parent.style == .scroll {
                 let text = UITextView(frame: parent.viewport.contentFrame)
                 text.isEditable = false; text.isSelectable = false
@@ -159,10 +153,23 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             } else { showCanvas() }
         }
         private func host(_ page: Int) -> PageHost {
-            PageHost(layout: parentValue!.layout, index: page, image: renderer?.image(page: page))
+            let host = PageHost(layout: parentValue!.layout, index: page, image: renderer?.cachedImage(page: page))
+            if let canvas = host.view as? PageCanvas { finishRendering(canvas, page: page) }
+            return host
         }
         private func makeCanvas(_ page: Int) -> PageCanvas {
-            PageCanvas(layout: parentValue!.layout, page: page, image: renderer?.image(page: page))
+            let canvas = PageCanvas(layout: parentValue!.layout, page: page, image: renderer?.cachedImage(page: page))
+            finishRendering(canvas, page: page)
+            return canvas
+        }
+        private func finishRendering(_ canvas: PageCanvas, page: Int) {
+            guard canvas.image == nil, let renderer else { return }
+            let token = generation
+            Task { @MainActor [weak self, weak canvas] in
+                let rendered = await renderer.preparePage(page)
+                guard let self, self.generation == token else { return }
+                canvas?.image = rendered?.image
+            }
         }
         private func showCanvas() {
             guard parentValue != nil else { return }
@@ -182,7 +189,20 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             warmTask = Task { @MainActor [weak self] in
                 do { try await Task.sleep(for: .milliseconds(60)) } catch { return }
                 guard let self, self.generation == token, !self.animating, self.textView == nil else { return }
-                self.renderer?.prepare(around: self.currentPage)
+                await self.renderer?.prepareAsync(around: self.currentPage)
+            }
+        }
+        func invalidate() {
+            generation += 1; warmTask?.cancel(); parentValue = nil
+        }
+        private func prepareTurn(_ forward: Bool, target: Int) {
+            guard let renderer else { return }
+            let token = generation
+            animating = true
+            warmTask = Task { @MainActor [weak self] in
+                await renderer.prepareAsync(around: target)
+                guard let self, !Task.isCancelled, self.generation == token else { return }
+                self.animating = false; self.warmTask = nil; self.turn(forward)
             }
         }
         private func restoreScroll(_ text: UITextView) {
@@ -206,6 +226,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             }
             let target = currentPage + (forward ? 1 : -1)
             guard target >= 0 && target < parent.layout.count else { parent.boundary(forward); return }
+            guard renderer?.cachedImage(page: target) != nil else { prepareTurn(forward, target: target); return }
             let token = generation
             if let curl {
                 animating = true
@@ -275,7 +296,10 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                     } else {
                         old.transform = .identity; preview?.removeFromSuperview()
                         self.scheduleWarm()
-                        if let forward { self.parentValue?.boundary(forward) }
+                        if let forward {
+                            if let target, target >= 0, target < parent.layout.count { self.turn(forward) }
+                            else { self.parentValue?.boundary(forward) }
+                        }
                     }
                 }
             default: break
@@ -285,9 +309,9 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             slideSign = delta < 0 ? -1 : 1
             let forward = (slideSign > 0) == parent.slideForwardRight
             let target = currentPage + (forward ? 1 : -1)
-            if slideTarget != target {
+            if slideTarget != target || slidePreview == nil {
                 slidePreview?.removeFromSuperview(); slidePreview = nil; slideTarget = target
-                if target >= 0 && target < parent.layout.count {
+                if target >= 0 && target < parent.layout.count, renderer?.cachedImage(page: target) != nil {
                     let preview = makeCanvas(target)
                     preview.frame = view.bounds; view.addSubview(preview); slidePreview = preview
                 }

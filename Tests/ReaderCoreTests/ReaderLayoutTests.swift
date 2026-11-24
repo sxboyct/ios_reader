@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import CoreText
 import Testing
 @testable import TVCore
 
@@ -38,6 +39,42 @@ import Testing
         #expect(enlarged.count > original.count)
         #expect(original.text.string == enlarged.text.string)
         #expect(original.paragraph(at: offset) == enlarged.paragraph(at: offset))
+    }
+    @Test func consecutiveChaptersUseExactlyTheVisibleFrameRanges() {
+        let chapters = [
+            NovelContent(title: "第十章", paragraphs: [
+                String(repeating: "长段落不能在第二页开始时丢字。😀 e\u{301} ", count: 90),
+                "", "第一章末尾标记"
+            ]),
+            NovelContent(title: "第十一章", paragraphs: [
+                "下一章节开头标记",
+                String(repeating: "新章继续分页。👨‍👩‍👧‍👦 English words 换行\n", count: 85),
+                "下一章节末尾标记"
+            ])
+        ]
+        for chapter in chapters {
+            for fontSize in [20.0, 36.0] {
+                let layout = ReaderTextLayout(content: chapter, size: CGSize(width: 272.5, height: 401.5),
+                    fontName: "", fontSize: fontSize, lineSpacing: 12, color: .black)
+                #expect(layout.count > 2)
+                #expect(layout.isComplete)
+                layout.executor.sync {
+                    let framesetter = CTFramesetterCreateWithAttributedString(layout.text as CFAttributedString)
+                    let path = CGPath(rect: CGRect(origin: .zero, size: layout.size), transform: nil)
+                    var start = 0
+                    for range in layout.pageRanges {
+                        let frame = CTFramesetterCreateFrame(framesetter, CFRange(location: start, length: 0), path, nil)
+                        let visible = CTFrameGetVisibleStringRange(frame)
+                        #expect(range == NSRange(location: visible.location, length: visible.length))
+                        start += visible.length
+                    }
+                    #expect(start == layout.text.length)
+                }
+                let reconstructed = layout.pageRanges.map { layout.text.attributedSubstring(from: $0).string }.joined()
+                #expect(reconstructed == layout.text.string)
+                #expect(reconstructed.hasSuffix(chapter.paragraphs.last!))
+            }
+        }
     }
     @Test func oldShelfMigratesAndPreciseBookmarksRoundTrip() throws {
         let book = NovelBook(sourceKey: "a", url: "https://a/book", name: "书")

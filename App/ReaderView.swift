@@ -9,6 +9,7 @@ struct ReaderView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.displayScale) private var displayScale
     let book: NovelBook
     let chapters: [NovelChapter]
     @State private var index: Int
@@ -17,6 +18,12 @@ struct ReaderView: View {
     @State private var content: NovelContent?
     @State private var contentRevision = UUID()
     @State private var layout: ReaderTextLayout?
+    @State private var renderer: ReaderPageRenderer?
+    @State private var preparedNext: ReaderPreparedChapter?
+    @State private var appliedConfiguration: ReaderRenderConfiguration?
+    @State private var loadedIndex: Int?
+    @State private var loadedRevision: UUID?
+    @State private var isLoading = true
     @State private var characterOffset = 0
     @State private var page = 0
     @State private var restorePending = true
@@ -55,7 +62,6 @@ struct ReaderView: View {
     private var dark: Bool { theme == "夜间" || (theme == "自动" && colorScheme == .dark) }
     private var background: Color { dark ? Color(white: 0.1) : theme == "纸张" ? Color(red: 0.95, green: 0.91, blue: 0.81) : Color(white: 0.99) }
     private var ink: Color { dark ? Color(white: 0.87) : Color(white: 0.16) }
-    private var transformed: NovelContent? { content.map { (NovelScript(rawValue: script) ?? .original).convert($0) } }
     private var position: Double {
         Double(layout?.paragraph(at: characterOffset) ?? 0) / Double(max(1, (content?.paragraphs.count ?? 1) - 1))
     }
@@ -68,14 +74,27 @@ struct ReaderView: View {
                 let viewport = ReaderViewport(safeAreaSize: geometry.size,
                     safeAreaInsets: UIEdgeInsets(top: safeArea.top, left: safeArea.leading,
                         bottom: safeArea.bottom, right: safeArea.trailing))
+                let configuration = ReaderRenderConfiguration(viewport: viewport, script: script, fontName: fontName,
+                    fontSize: fontSize, lineSpacing: lineSpacing, ink: UIColor(ink), background: UIColor(background),
+                    image: backgrounds.image, opacity: backgroundOpacity, scale: displayScale)
                 ZStack(alignment: .topLeading) {
                 Group {
-                    if let layout, content != nil {
-                        ReaderPageSurface(layout: layout, viewport: viewport, style: style, offset: characterOffset,
+                    if let layout, let renderer {
+                        ReaderPageSurface(layout: layout, renderer: renderer, viewport: renderer.viewport, style: style, offset: characterOffset,
                             background: UIColor(background), backgroundImage: backgrounds.image,
                             backgroundOpacity: backgroundOpacity, animated: turnAnimation && !reduceMotion,
                             tapFraction: tapFraction, tapsEnabled: tapTurns, slideForwardRight: slideForwardRight,
-                            moved: moved, boundary: boundary, center: { controls.toggle() })
+                            moved: { [chapter = index, identity = layout] offset, page in
+                                guard !isLoading, loadedIndex == chapter, self.layout === identity else { return }
+                                moved(offset, page)
+                            }, boundary: { [chapter = index, identity = layout] forward in
+                                guard !isLoading, loadedIndex == chapter, self.layout === identity else { return }
+                                boundary(forward)
+                            }, center: { controls.toggle() })
+                            .allowsHitTesting(!isLoading)
+                            .overlay {
+                                if isLoading { ProgressView("正在准备章节…").padding().background(.regularMaterial, in: Capsule()) }
+                            }
                     } else if let failure {
                         ContentUnavailableView {
                             Label("章节加载失败", systemImage: "wifi.exclamationmark")
@@ -100,14 +119,12 @@ struct ReaderView: View {
                 .offset(x: viewport.origin.x, y: viewport.origin.y)
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
-                .task(id: LayoutKey(contentRevision: contentRevision, revision: revision, script: script,
-                    size: viewport.contentFrame.size, font: fontName, fontSize: fontSize, spacing: lineSpacing, dark: dark)) {
-                    // Coalesce slider changes so typography does not block every drag event.
-                    if layout != nil {
+                .task(id: LayoutKey(contentRevision: contentRevision, revision: revision, configuration: configuration)) {
+                    if !restorePending, appliedConfiguration != configuration {
                         do { try await Task.sleep(for: .milliseconds(120)) } catch { return }
                     }
                     guard !Task.isCancelled, geometry.size.width > 0, geometry.size.height > 0 else { return }
-                    reflow(size: viewport.contentFrame.size)
+                    await reflow(configuration: configuration)
                 }
             }
             if showProgress && !controls {
@@ -293,27 +310,61 @@ struct ReaderView: View {
         }
     }
     private func load() async {
-        content = nil; layout = nil; failure = nil; restorePending = true
+        failure = nil; restorePending = true; isLoading = true
+        loadedIndex = nil; loadedRevision = nil
         let requestedIndex = index
+        let requestedRevision = revision
         do {
-            let loaded = try await NovelBooks.shared.content(book, chapters: chapters, index: requestedIndex)
-            guard !Task.isCancelled, requestedIndex == index else { return }
-            content = loaded; contentRevision = UUID()
-            await NovelBooks.shared.prefetch(book, chapters: chapters, after: requestedIndex)
-        } catch { if !Task.isCancelled { failure = error.localizedDescription } }
+            let loaded: NovelContent
+            if let preparedNext, preparedNext.index == requestedIndex { loaded = preparedNext.content }
+            else { loaded = try await NovelBooks.shared.content(book, chapters: chapters, index: requestedIndex) }
+            guard !Task.isCancelled, requestedIndex == index, requestedRevision == revision else { return }
+            content = loaded; loadedIndex = requestedIndex; loadedRevision = requestedRevision; contentRevision = UUID()
+        } catch {
+            if !Task.isCancelled, requestedIndex == index, requestedRevision == revision {
+                failure = error.localizedDescription; layout = nil; renderer = nil; isLoading = false
+            }
+        }
     }
-    private func reflow(size: CGSize) {
-        guard let content = transformed else { return }
-        // Restore process font registrations before TextKit resolves the saved PostScript name.
+    private func reflow(configuration: ReaderRenderConfiguration) async {
+        guard let content, loadedIndex == index, loadedRevision == revision else { return }
+        isLoading = true
         _ = ReaderFonts.shared
-        let newLayout = ReaderTextLayout(content: content, size: size, fontName: fontName,
-            fontSize: fontSize, lineSpacing: lineSpacing, color: UIColor(ink))
-        guard newLayout.count > 0, newLayout.isComplete else { failure = "当前页面无法完整排版，请在阅读设置中调整字号。"; layout = nil; return }
-        let requested = restorePending ? (resumeOffset ?? newLayout.offset(paragraph: Int(resumePosition * Double(max(0, content.paragraphs.count - 1))))) : characterOffset
-        characterOffset = min(max(0, requested), max(0, newLayout.text.length - 1))
-        page = newLayout.page(containing: characterOffset)
-        layout = newLayout; restorePending = false
-        record()
+        let requestedIndex = index
+        let requestedRevision = revision
+        let requestedContent = contentRevision
+        do {
+            let prepared: ReaderPreparedChapter
+            if let candidate = preparedNext, candidate.index == index, candidate.content == content,
+               candidate.configuration == configuration {
+                prepared = candidate
+            } else {
+                prepared = try await ReaderPreparedChapter.build(index: index, content: content, configuration: configuration,
+                    position: restorePending ? resumePosition : 0, character: restorePending ? resumeOffset : characterOffset)
+            }
+            guard !Task.isCancelled, requestedIndex == index, requestedRevision == revision,
+                  requestedContent == contentRevision else { return }
+            let offset = prepared.offset(position: restorePending ? resumePosition : 0,
+                character: restorePending ? resumeOffset : characterOffset)
+            await prepared.renderer.prepareAsync(around: prepared.layout.page(containing: offset))
+            guard !Task.isCancelled, requestedIndex == index, requestedRevision == revision,
+                  requestedContent == contentRevision else { return }
+            characterOffset = offset; page = prepared.layout.page(containing: offset)
+            layout = prepared.layout; renderer = prepared.renderer; appliedConfiguration = configuration
+            restorePending = false; isLoading = false; preparedNext = nil
+            record()
+            guard let next = neighbor(1) else { preparedNext = nil; return }
+            let nextContent = try await NovelBooks.shared.content(book, chapters: chapters, index: next)
+            guard !Task.isCancelled, requestedIndex == index, requestedRevision == revision else { return }
+            let nextChapter = try await ReaderPreparedChapter.build(index: next, content: nextContent,
+                configuration: configuration, priority: .utility)
+            guard !Task.isCancelled, requestedIndex == index, requestedRevision == revision else { return }
+            preparedNext = nextChapter
+        } catch {
+            if !Task.isCancelled, requestedIndex == index, requestedRevision == revision, isLoading {
+                failure = error.localizedDescription; layout = nil; renderer = nil; isLoading = false
+            }
+        }
     }
     private func moved(_ offset: Int, _ page: Int) {
         characterOffset = offset; self.page = page
@@ -328,7 +379,8 @@ struct ReaderView: View {
         else { notice = forward ? "已经是最后一章" : "已经是第一章" }
     }
     private func record() {
-        guard content != nil, layout != nil, chapters.indices.contains(index) else { return }
+        guard !isLoading, loadedIndex == index, loadedRevision == revision,
+              content != nil, layout != nil, chapters.indices.contains(index) else { return }
         var entry = library.entry(book) ?? NovelLibrary.ShelfBook(book: book)
         entry.chapterIndex = index; entry.chapterTitle = chapters[index].title
         entry.chapterCount = chapters.count; entry.position = position; entry.characterOffset = characterOffset; entry.updated = Date()
@@ -350,17 +402,12 @@ struct ReaderView: View {
         return nil
     }
     private func jump(_ next: Int, position: Double = 0, offset: Int? = nil) {
-        saveTask?.cancel(); record(); content = nil; layout = nil
+        saveTask?.cancel(); record(); isLoading = true; loadedRevision = nil
         resumePosition = position; resumeOffset = offset; index = next; revision = UUID()
     }
     private struct LayoutKey: Equatable {
         let contentRevision: UUID
         let revision: UUID
-        let script: String
-        let size: CGSize
-        let font: String
-        let fontSize: Double
-        let spacing: Double
-        let dark: Bool
+        let configuration: ReaderRenderConfiguration
     }
 }
