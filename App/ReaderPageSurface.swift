@@ -8,6 +8,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
     let style: ReaderTurnStyle
     let offset: Int
     let background: UIColor
+    let backgroundImage: UIImage?
+    let backgroundOpacity: Double
     let animated: Bool
     let tapFraction: Double
     let tapsEnabled: Bool
@@ -18,34 +20,49 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> Controller { Controller() }
     func updateUIViewController(_ controller: Controller, context: Context) { controller.configure(self) }
 
-    @MainActor final class PageCanvas: UIView {
+    @MainActor class BackgroundCanvas: UIView {
+        var image: UIImage? { didSet { setNeedsDisplay() } }
+        var imageOpacity = 0.3 { didSet { setNeedsDisplay() } }
+        override func draw(_ rect: CGRect) {
+            guard let image, image.size.width > 0, image.size.height > 0 else { return }
+            let scale = max(bounds.width / image.size.width, bounds.height / image.size.height)
+            let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+            let target = CGRect(x: (bounds.width - size.width) / 2, y: (bounds.height - size.height) / 2,
+                width: size.width, height: size.height)
+            image.draw(in: target, blendMode: .normal, alpha: CGFloat(min(1, max(0, imageOpacity))))
+        }
+    }
+
+    @MainActor final class PageCanvas: BackgroundCanvas {
         let layout: ReaderTextLayout
         let page: Int
-        init(layout: ReaderTextLayout, page: Int, color: UIColor) {
+        init(layout: ReaderTextLayout, page: Int, color: UIColor, image: UIImage?, opacity: Double) {
             self.layout = layout; self.page = page
             super.init(frame: .zero)
             backgroundColor = color; isOpaque = true; contentMode = .redraw
+            self.image = image; imageOpacity = opacity
             isAccessibilityElement = true
             if layout.pageRanges.indices.contains(page) {
                 accessibilityLabel = layout.text.attributedSubstring(from: layout.pageRanges[page]).string
             }
         }
         @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
-        override func draw(_ rect: CGRect) { layout.draw(page: page) }
+        override func draw(_ rect: CGRect) { super.draw(rect); layout.draw(page: page) }
     }
 
     @MainActor final class PageHost: UIViewController {
         let index: Int
-        init(layout: ReaderTextLayout, index: Int, color: UIColor) {
+        init(layout: ReaderTextLayout, index: Int, color: UIColor, image: UIImage?, opacity: Double) {
             self.index = index
             super.init(nibName: nil, bundle: nil)
-            view = PageCanvas(layout: layout, page: index, color: color)
+            view = PageCanvas(layout: layout, page: index, color: color, image: image, opacity: opacity)
         }
         @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
     }
 
     @MainActor final class Controller: UIViewController, UIPageViewControllerDataSource, UIPageViewControllerDelegate, UITextViewDelegate, UIGestureRecognizerDelegate {
         private var parentValue: ReaderPageSurface?
+        private let backdrop = BackgroundCanvas(frame: .zero)
         private var currentLayout: ReaderTextLayout?
         private var currentStyle: ReaderTurnStyle?
         private var currentAnimation = true
@@ -68,6 +85,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         override func viewDidLoad() {
             super.viewDidLoad()
             view.clipsToBounds = true
+            backdrop.contentMode = .redraw; backdrop.isUserInteractionEnabled = false
+            view.addSubview(backdrop)
             let tap = UITapGestureRecognizer(target: self, action: #selector(tapped(_:)))
             tap.delegate = self; view.addGestureRecognizer(tap)
             let pan = UIPanGestureRecognizer(target: self, action: #selector(draggedSlide(_:)))
@@ -84,9 +103,10 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         func configure(_ parent: ReaderPageSurface) {
             loadViewIfNeeded()
             parentValue = parent; view.backgroundColor = parent.background
-            canvas?.backgroundColor = parent.background
-            textView?.backgroundColor = parent.background
-            for controller in curl?.viewControllers ?? [] { controller.view.backgroundColor = parent.background }
+            for case let surface as BackgroundCanvas in view.subviews { configureBackground(surface) }
+            for controller in curl?.viewControllers ?? [] {
+                if let surface = controller.view as? BackgroundCanvas { configureBackground(surface) }
+            }
             if currentLayout !== parent.layout || currentStyle != parent.style || currentAnimation != parent.animated {
                 generation += 1; animating = false
                 currentLayout = parent.layout; currentStyle = parent.style; currentAnimation = parent.animated
@@ -103,6 +123,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         }
         override func viewDidLayoutSubviews() {
             super.viewDidLayoutSubviews()
+            backdrop.frame = view.bounds
             if !animating { canvas?.frame = view.bounds }
             curl?.view.frame = view.bounds; textView?.frame = view.bounds
             if pendingScrollRestore, let textView, view.bounds.width > 0, view.bounds.height > 0 {
@@ -123,7 +144,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             if parent.style == .scroll {
                 let text = UITextView(frame: view.bounds)
                 text.isEditable = false; text.isSelectable = false
-                text.backgroundColor = parent.background; text.attributedText = parent.layout.text
+                text.backgroundColor = .clear; text.attributedText = parent.layout.text
                 text.textContainerInset = .zero; text.textContainer.lineFragmentPadding = 0
                 text.contentInsetAdjustmentBehavior = .never; text.showsVerticalScrollIndicator = false
                 text.alwaysBounceVertical = true
@@ -139,12 +160,20 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             } else { showCanvas() }
         }
         private func host(_ page: Int) -> PageHost {
-            PageHost(layout: parentValue!.layout, index: page, color: parentValue!.background)
+            PageHost(layout: parentValue!.layout, index: page, color: parentValue!.background,
+                image: parentValue!.backgroundImage, opacity: parentValue!.backgroundOpacity)
+        }
+        private func configureBackground(_ surface: BackgroundCanvas) {
+            guard let parent = parentValue else { return }
+            surface.backgroundColor = parent.background
+            surface.image = parent.backgroundImage
+            surface.imageOpacity = parent.backgroundOpacity
         }
         private func showCanvas() {
             guard let parent = parentValue else { return }
             canvas?.removeFromSuperview()
-            let next = PageCanvas(layout: parent.layout, page: currentPage, color: parent.background)
+            let next = PageCanvas(layout: parent.layout, page: currentPage, color: parent.background,
+                image: parent.backgroundImage, opacity: parent.backgroundOpacity)
             next.frame = view.bounds; view.addSubview(next); canvas = next
         }
         private func commit(_ page: Int) {
@@ -183,7 +212,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 return
             }
             guard parent.animated, let old = canvas else { commit(target); showCanvas(); return }
-            let next = PageCanvas(layout: parent.layout, page: target, color: parent.background)
+            let next = PageCanvas(layout: parent.layout, page: target, color: parent.background,
+                image: parent.backgroundImage, opacity: parent.backgroundOpacity)
             next.frame = view.bounds
             let distance = parent.style == .vertical ? view.bounds.height : view.bounds.width
             let forwardSign = parent.style == .slide && parent.slideForwardRight ? -1.0 : 1.0
@@ -220,7 +250,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 draggingSlide = false
                 updateSlide(delta: delta, width: width, old: old, parent: parent)
                 let forward = ReaderSlideTurn.committedForward(translation: Double(delta), width: Double(width),
-                    forwardRight: parent.slideForwardRight, cancelled: gesture.state != .ended)
+                    forwardRight: parent.slideForwardRight, velocity: Double(gesture.velocity(in: view).x),
+                    cancelled: gesture.state != .ended)
                 let preview = slidePreview
                 let target = slideTarget
                 let token = generation
@@ -251,7 +282,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             if slideTarget != target {
                 slidePreview?.removeFromSuperview(); slidePreview = nil; slideTarget = target
                 if target >= 0 && target < parent.layout.count {
-                    let preview = PageCanvas(layout: parent.layout, page: target, color: parent.background)
+                    let preview = PageCanvas(layout: parent.layout, page: target, color: parent.background,
+                        image: parent.backgroundImage, opacity: parent.backgroundOpacity)
                     preview.frame = view.bounds; view.addSubview(preview); slidePreview = preview
                 }
             }

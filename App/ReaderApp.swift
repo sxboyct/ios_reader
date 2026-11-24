@@ -41,6 +41,7 @@ struct ReaderApp: App {
 @MainActor @Observable
 final class ReaderLibrary {
     var shelf = NovelLibrary.load("shelf.json", as: [NovelLibrary.ShelfBook].self) ?? []
+    var searchHistory = ReaderSearchHistory(NovelLibrary.load("search-history.json", as: [String].self) ?? [])
     var sources: [NovelSource] = []
     var lists: [NovelSourceList] = []
     func reloadSources() { sources = NovelSources.shared.all; lists = NovelSources.shared.lists }
@@ -51,6 +52,18 @@ final class ReaderLibrary {
     }
     func remove(_ book: NovelBook) {
         shelf.removeAll { $0.id == book.match }; NovelLibrary.save(shelf, as: "shelf.json")
+    }
+    func recordSearch(_ keyword: String) {
+        searchHistory.record(keyword)
+        NovelLibrary.save(searchHistory.entries, as: "search-history.json")
+    }
+    func removeSearch(_ keyword: String) {
+        searchHistory.remove(keyword)
+        NovelLibrary.save(searchHistory.entries, as: "search-history.json")
+    }
+    func clearSearchHistory() {
+        searchHistory.clear()
+        NovelLibrary.save(searchHistory.entries, as: "search-history.json")
     }
 }
 
@@ -85,7 +98,7 @@ struct ShelfView: View {
                 }
                 .swipeActions { Button("移出书架", role: .destructive) { library.remove(entry.book) } }
             }
-        }.navigationTitle("映匣阅读")
+        }.navigationTitle("映夏阅读")
     }
 }
 
@@ -97,8 +110,28 @@ struct SearchView: View {
     @State private var searchID = UUID()
     @State private var requested = ""
     @State private var status = ""
+    @State private var confirmingClear = false
     var body: some View {
         List {
+            if !searching && (query.isEmpty || requested.isEmpty) && !library.searchHistory.entries.isEmpty {
+                Section {
+                    ForEach(library.searchHistory.entries, id: \.self) { keyword in
+                        Button { submit(keyword) } label: {
+                            Label(keyword, systemImage: "clock.arrow.circlepath")
+                                .foregroundStyle(.primary)
+                        }
+                        .swipeActions {
+                            Button("删除", role: .destructive) { library.removeSearch(keyword) }
+                        }
+                    }
+                } header: {
+                    HStack {
+                        Text("搜索历史")
+                        Spacer()
+                        Button("清空") { confirmingClear = true }
+                    }
+                }
+            }
             if searching { ProgressView("正在搜索…") }
             if !status.isEmpty { Text(status).font(.caption).foregroundStyle(.secondary) }
             ForEach(hits) { hit in
@@ -112,7 +145,10 @@ struct SearchView: View {
         }
         .navigationTitle("找书")
         .searchable(text: $query, prompt: "书名、作者")
-        .onSubmit(of: .search) { requested = query.trimmingCharacters(in: .whitespacesAndNewlines); searchID = UUID() }
+        .onSubmit(of: .search) { submit(query) }
+        .confirmationDialog("清空全部搜索历史？", isPresented: $confirmingClear, titleVisibility: .visible) {
+            Button("清空历史", role: .destructive) { library.clearSearchHistory() }
+        }
         .task(id: searchID) {
             guard !requested.isEmpty else { searching = false; return }
             hits = []; searching = true; status = ""
@@ -132,6 +168,12 @@ struct SearchView: View {
             searching = false
             if sources.isEmpty { status = "请先导入并启用可搜索的文字书源。" }
         }
+    }
+    private func submit(_ keyword: String) {
+        let cleaned = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return }
+        query = cleaned; requested = cleaned
+        library.recordSearch(cleaned); searchID = UUID()
     }
 }
 

@@ -1,11 +1,15 @@
 import Foundation
 
-/// A drag commits only past half the reading surface; flick velocity never skips this threshold.
+/// Short drags and deliberate flicks commit without requiring half a page of travel.
 public enum ReaderSlideTurn {
     public static func committedForward(translation: Double, width: Double,
-                                        forwardRight: Bool, cancelled: Bool = false) -> Bool? {
+                                        forwardRight: Bool, velocity: Double = 0,
+                                        cancelled: Bool = false) -> Bool? {
         guard !cancelled, width.isFinite, width > 0, translation.isFinite,
-              abs(translation) > width / 2 else { return nil }
+              velocity.isFinite else { return nil }
+        let distance = abs(translation)
+        let deliberateFlick = distance >= 8 && abs(velocity) >= 450 && (translation > 0) == (velocity > 0)
+        guard distance >= min(40, width * 0.12) || deliberateFlick else { return nil }
         return (translation > 0) == forwardRight
     }
 }

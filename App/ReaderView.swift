@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import PhotosUI
 import TVCore
 
 struct ReaderView: View {
@@ -26,6 +27,9 @@ struct ReaderView: View {
     @State private var revision = UUID()
     @State private var notice: String?
     @State private var saveTask: Task<Void, Never>?
+    @State private var backgrounds = ReaderBackgrounds.shared
+    @State private var backgroundSelection: PhotosPickerItem?
+    @AppStorage("reader.backgroundOpacity") private var backgroundOpacity = 0.3
     @AppStorage("reader.fontName") private var fontName = ""
     @AppStorage("reader.fontSize") private var fontSize = 20.0
     @AppStorage("reader.lineSpacing") private var lineSpacing = 10.0
@@ -63,7 +67,8 @@ struct ReaderView: View {
                 Group {
                     if let layout, content != nil {
                         ReaderPageSurface(layout: layout, style: style, offset: characterOffset,
-                            background: UIColor(background), animated: turnAnimation && !reduceMotion,
+                            background: UIColor(background), backgroundImage: backgrounds.image,
+                            backgroundOpacity: backgroundOpacity, animated: turnAnimation && !reduceMotion,
                             tapFraction: tapFraction, tapsEnabled: tapTurns, slideForwardRight: slideForwardRight,
                             moved: moved, boundary: boundary, center: { controls.toggle() })
                     } else if let failure {
@@ -124,6 +129,13 @@ struct ReaderView: View {
             }
         }
         .onChange(of: settings) { _, shown in if shown { controls = false } }
+        .onChange(of: backgroundSelection) { _, item in
+            guard let item else { return }
+            Task { await backgrounds.importPhoto(item); backgroundSelection = nil }
+        }
+        .alert("背景图片", isPresented: Binding(get: { backgrounds.error != nil }, set: { if !$0 { backgrounds.error = nil } })) {
+            Button("确定") { backgrounds.error = nil }
+        } message: { Text(backgrounds.error ?? "") }
         .sheet(isPresented: $contents) {
             NavigationStack {
                 List(chapters) { chapter in
@@ -185,7 +197,7 @@ struct ReaderView: View {
                     }
                     if style == .slide {
                         Toggle("右滑进入下一页", isOn: $slideForwardRight)
-                        Text("页面跟随手指移动，松手时超过半屏才翻页，否则回到原页。关闭上方选项后，左滑进入下一页。")
+                        Text("页面跟随手指移动，短距离滑动或轻快一划即可翻页，无需超过半屏；不足距离时回弹。关闭上方选项后，左滑进入下一页。")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     Toggle("翻页动画", isOn: $turnAnimation)
@@ -212,7 +224,22 @@ struct ReaderView: View {
                         Text("原文").tag(""); Text("简体").tag("simplified"); Text("繁体").tag("traditional")
                     }
                 }
-                Picker("主题", selection: $theme) { ForEach(["自动", "纸张", "日间", "夜间"], id: \.self) { Text($0) } }
+                Section("背景") {
+                    Picker("主题", selection: $theme) { ForEach(["自动", "纸张", "日间", "夜间"], id: \.self) { Text($0) } }
+                    PhotosPicker(selection: $backgroundSelection, matching: .images) {
+                        Label(backgrounds.image == nil ? "选择背景图片" : "更换背景图片", systemImage: "photo")
+                    }.disabled(backgrounds.busy)
+                    if backgrounds.busy { ProgressView("正在保存背景图片…") }
+                    if let image = backgrounds.image {
+                        Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 120)
+                            .frame(maxWidth: .infinity).accessibilityLabel("当前背景图片")
+                        LabeledContent("图片浓度", value: "\(Int(backgroundOpacity * 100))%")
+                        Slider(value: $backgroundOpacity, in: 0.1...1, step: 0.05)
+                        Button("移除背景图片", role: .destructive) { backgrounds.remove() }.disabled(backgrounds.busy)
+                    }
+                    Text("图片保存在本机，重启后仍然生效。调低图片浓度可提高文字可读性。")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             }
             .scrollContentBackground(.hidden)
             .background(background)

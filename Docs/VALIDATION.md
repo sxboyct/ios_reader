@@ -1,4 +1,33 @@
-# Validation record — 2026-11-23
+# Validation record
+
+## 1.3.0 / build 5 — 2026-11-24
+
+Current changes (supersede the historical gesture/import checklists below):
+- Display name is 映夏阅读. Bundle ID, scheme, Actions workflow and unsigned IPA artifact names are unchanged.
+- Slide turns retain the finger-following animation and settle animation. Release commits at 12% of viewport width, capped at 40 points, or after an aligned 450-point/second flick with at least 8 points of travel. Cancellation does not commit.
+- A UIKit pan recognizer covers the complete compact settings panel. An upward drag of 24 points, or its projected flick distance, expands it. Horizontal gestures remain available for sliders; the expanded form scrolls normally, and the handle can collapse it. The reader viewport stays unchanged.
+- Photo backgrounds are imported with PhotosPicker, normalized to PNG with orientation correction and a 2048-pixel longest edge, and stored locally. Selection, replacement, removal, restart restoration and opacity control are included. All page canvases and the scrolling backdrop use the same image without reflowing text.
+- Removed the folder import UI; retained copy-based JSON/XBS file import and Files app open/share handling. Source parsing is unchanged.
+- Search history persists 30 trimmed, deduplicated terms in most-recent-first order, supports tapping to search, individual deletion and confirmed clearing.
+
+Local verification:
+- PASS: `python scripts/check-project.py`.
+- PASS: `node --experimental-vm-modules scripts/test-engine.mjs`.
+- PASS: `node --experimental-vm-modules scripts/test-xiangse.mjs` (offline fixtures).
+- PASS: Swift tree-sitter syntax parsing for 14 App/core/test files. This is NOT Swift compilation or type checking.
+- PASS: YAML parsing; name/version/build and unchanged bundle ID; Actions still runs simulator tests before device build and unsigned IPA packaging.
+- Native tests updated/added for short drags, flick direction/noise/cancellation, history deduplication/limits/serialization/deletion, and background downsampling/persistence/removal/invalid or oversized input.
+- NOT RUN: Swift/C compilation, native tests, simulator, real-device gestures/photos, remote Actions, IPA build. This environment is Windows without Xcode.
+
+Required device acceptance after a successful Actions run:
+1. In slide mode, drag about 40 points in both directions and release: retain the translation animation and commit once. Also try a short fast flick, a tiny slow drag, cancellation, direction reversal, both reading directions, chapter boundaries and Reduce Motion.
+2. Open settings and pull upward from a blank area, a form row, the navigation title and a slider row; the compact panel must expand without moving the reader's text. Check horizontal sliders, expanded form scrolling and handle collapse, including the font screen.
+3. Select portrait/landscape and cloud-backed photos, adjust opacity in light/dark themes, turn pages in every style, restart, replace and remove the image. Cancellation and failed selection must leave the previous background intact.
+4. Import JSON/XBS through the file selector and Files share/open; verify no folder import entry remains.
+5. Search trimmed/repeated keywords, tap history, restart, remove an entry and cancel/confirm clear. Check that history does not push down active search results.
+6. Upgrade in place: verify the home-screen label is 映夏阅读 and existing shelf, fonts and reading positions remain available.
+
+## Initial validation — 2026-11-23
 
 - PASS: local structural/resource checks (`python scripts/check-project.py`).
 - PASS: JavaScript fixture integration from source load → search → details → catalog → chapter text, CSS extraction and removed audio API (`node --experimental-vm-modules scripts/test-engine.mjs`). No real third-party website used in this test.
