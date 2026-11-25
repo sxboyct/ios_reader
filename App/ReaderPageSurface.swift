@@ -23,6 +23,10 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
     var nextRenderer: ReaderPageRenderer? = nil
     var crossedChapter: () -> Void = {}
     var loadNext: (@MainActor () async -> ReaderPreparedChapter?)? = nil
+    var previousLayout: ReaderTextLayout? = nil
+    var previousRenderer: ReaderPageRenderer? = nil
+    var crossedPreviousChapter: () -> Void = {}
+    var loadPrevious: (@MainActor () async -> ReaderPreparedChapter?)? = nil
     func makeUIViewController(context: Context) -> Controller { Controller() }
     func updateUIViewController(_ controller: Controller, context: Context) { controller.configure(self) }
     static func dismantleUIViewController(_ controller: Controller, coordinator: ()) { controller.invalidate() }
@@ -101,6 +105,10 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         func configure(_ parent: ReaderPageSurface) {
             loadViewIfNeeded()
             let nextChanged = parentValue?.nextLayout !== parent.nextLayout || parentValue?.nextRenderer !== parent.nextRenderer
+            let previousChanged = parentValue?.previousLayout !== parent.previousLayout || parentValue?.previousRenderer !== parent.previousRenderer
+            let crossingChanged = crossingLayout != nil &&
+                ((crossingLayout === parentValue?.nextLayout && nextChanged)
+                    || (crossingLayout === parentValue?.previousLayout && previousChanged))
             parentValue = parent; view.backgroundColor = parent.background
             if awaitingChapter, currentLayout === parent.layout {
                 awaitingChapter = false
@@ -118,7 +126,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 backdrop.image = renderer?.background
             }
             if renderingChanged || currentStyle != parent.style || currentAnimation != parent.animated
-                || (animating && crossingLayout != nil && nextChanged) {
+                || (animating && crossingChanged) {
                 generation += 1; animating = false
                 currentLayout = parent.layout; currentStyle = parent.style; currentAnimation = parent.animated
                 currentOffset = min(max(0, parent.offset), max(0, parent.layout.text.length - 1))
@@ -183,6 +191,10 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             page.center = CGPoint(x: view.bounds.midX, y: view.bounds.midY)
         }
         private func host(_ page: Int) -> PageHost {
+            if let parent = parentValue, page == -1,
+               let layout = parent.previousLayout, let image = parent.previousRenderer?.cachedImage(page: layout.count - 1) {
+                return PageHost(layout: layout, index: page, image: image, displayPage: layout.count - 1)
+            }
             if let parent = parentValue, page == parent.layout.count,
                let layout = parent.nextLayout, let image = parent.nextRenderer?.cachedImage(page: 0) {
                 return PageHost(layout: layout, index: page, image: image, displayPage: 0)
@@ -192,6 +204,10 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             return host
         }
         private func makeCanvas(_ page: Int, image: UIImage? = nil) -> PageCanvas {
+            if let parent = parentValue, page == -1, let layout = parent.previousLayout {
+                return PageCanvas(layout: layout, page: layout.count - 1,
+                    image: image ?? parent.previousRenderer?.cachedImage(page: layout.count - 1))
+            }
             if let parent = parentValue, page == parent.layout.count, let layout = parent.nextLayout {
                 return PageCanvas(layout: layout, page: 0, image: image ?? parent.nextRenderer?.cachedImage(page: 0))
             }
@@ -217,6 +233,17 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         private func commit(_ page: Int) {
             guard let parent = parentValue else { return }
             crossingLayout = nil
+            if page == -1, let previousLayout = parent.previousLayout, let previousRenderer = parent.previousRenderer,
+               previousLayout.count > 0 {
+                generation += 1; warmTask?.cancel()
+                currentLayout = previousLayout; renderer = previousRenderer; currentViewport = previousRenderer.viewport
+                backdrop.image = previousRenderer.background
+                currentPage = previousLayout.count - 1; currentOffset = previousLayout.offset(page: currentPage)
+                awaitingChapter = true
+                (curl?.viewControllers?.first as? PageHost)?.index = currentPage
+                parent.crossedPreviousChapter()
+                return
+            }
             if page == parent.layout.count, let nextLayout = parent.nextLayout, let nextRenderer = parent.nextRenderer {
                 generation += 1; warmTask?.cancel()
                 currentLayout = nextLayout; renderer = nextRenderer; currentViewport = nextRenderer.viewport
@@ -265,9 +292,9 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 if let rendered { self.turn(forward, preparedImage: rendered.image) }
             }
         }
-        private func prepareChapter() {
-            guard let parent = parentValue, let loadNext = parent.loadNext else {
-                parentValue?.boundary(true); return
+        private func prepareChapter(forward: Bool) {
+            guard let parent = parentValue, let loadChapter = forward ? parent.loadNext : parent.loadPrevious else {
+                parentValue?.boundary(forward); return
             }
             let token = generation
             let sourcePage = currentPage
@@ -279,16 +306,24 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             view.addSubview(indicator); indicator.startAnimating()
             turnTask = Task { @MainActor [weak self] in
                 defer { indicator.removeFromSuperview() }
-                let next = await loadNext()
+                let chapter = await loadChapter()
+                guard !Task.isCancelled else { return }
+                if let chapter {
+                    await chapter.renderer.preparePage(forward ? 0 : chapter.layout.count - 1)
+                }
                 guard let self, !Task.isCancelled, self.generation == token,
                       self.currentPage == sourcePage, self.currentLayout === sourceLayout else { return }
                 self.animating = false; self.turnTask = nil; self.loadingChapter = false
                 self.curl?.view.isUserInteractionEnabled = true
-                guard let next else { self.parentValue?.boundary(true); return }
+                guard let chapter, chapter.layout.count > 0,
+                      chapter.renderer.cachedImage(page: forward ? 0 : chapter.layout.count - 1) != nil else {
+                    self.parentValue?.boundary(forward); return
+                }
                 var updated = self.parentValue ?? parent
-                updated.nextLayout = next.layout; updated.nextRenderer = next.renderer
+                if forward { updated.nextLayout = chapter.layout; updated.nextRenderer = chapter.renderer }
+                else { updated.previousLayout = chapter.layout; updated.previousRenderer = chapter.renderer }
                 self.configure(updated)
-                self.turn(true)
+                self.turn(forward)
             }
         }
         private func restoreScroll(_ text: UITextView) {
@@ -312,18 +347,24 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             }
             let target = currentPage + (forward ? 1 : -1)
             if forward, target == parent.layout.count, !nextChapterReady(target), parent.loadNext != nil {
-                prepareChapter(); return
+                prepareChapter(forward: true); return
             }
-            guard target >= 0 && (target < parent.layout.count || nextChapterReady(target)) else { parent.boundary(forward); return }
+            if !forward, target == -1, !previousChapterReady(target), parent.loadPrevious != nil {
+                prepareChapter(forward: false); return
+            }
+            guard parent.layout.pageRanges.indices.contains(target) || nextChapterReady(target) || previousChapterReady(target) else {
+                parent.boundary(forward); return
+            }
             guard let targetImage = preparedImage ?? pageImage(target) else {
                 prepareTurn(forward, target: target); return
             }
             let token = generation
-            crossingLayout = target == parent.layout.count ? parent.nextLayout : nil
+            crossingLayout = target == -1 ? parent.previousLayout : target == parent.layout.count ? parent.nextLayout : nil
             if let curl {
                 animating = true
-                let targetHost = PageHost(layout: target == parent.layout.count ? parent.nextLayout! : parent.layout,
-                    index: target, image: targetImage, displayPage: target == parent.layout.count ? 0 : target)
+                let targetLayout = crossingLayout ?? parent.layout
+                let displayPage = target == -1 ? targetLayout.count - 1 : target == parent.layout.count ? 0 : target
+                let targetHost = PageHost(layout: targetLayout, index: target, image: targetImage, displayPage: displayPage)
                 curl.setViewControllers([targetHost], direction: forward ? .forward : .reverse, animated: parent.animated) { [weak self] finished in
                     guard let self, self.generation == token else { return }
                     self.animating = false
@@ -396,7 +437,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                         old.transform = .identity; preview?.removeFromSuperview()
                         self.scheduleWarm()
                         if let forward {
-                            if let target, target >= 0, target <= parent.layout.count { self.turn(forward) }
+                            if let target, target >= -1, target <= parent.layout.count { self.turn(forward) }
                             else { self.parentValue?.boundary(forward) }
                         }
                     }
@@ -408,10 +449,11 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             slideSign = delta < 0 ? -1 : 1
             let forward = (slideSign > 0) == parent.slideForwardRight
             let target = currentPage + (forward ? 1 : -1)
-            crossingLayout = target == parent.layout.count ? parent.nextLayout : nil
+            crossingLayout = target == -1 ? parent.previousLayout : target == parent.layout.count ? parent.nextLayout : nil
             if slideTarget != target || slidePreview == nil {
                 slidePreview?.removeFromSuperview(); slidePreview = nil; slideTarget = target
-                if target >= 0 && (target < parent.layout.count || nextChapterReady(target)), pageImage(target) != nil {
+                if (parent.layout.pageRanges.indices.contains(target) || nextChapterReady(target) || previousChapterReady(target)),
+                   pageImage(target) != nil {
                     let preview = makeCanvas(target)
                     place(preview); view.addSubview(preview); slidePreview = preview
                 }
@@ -449,11 +491,12 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 guard abs(delta.x) > 50, abs(delta.x) > abs(delta.y) else { return }
                 if swipeStartPage == parent.layout.count - 1 && delta.x < 0,
                    !nextChapterReady(parent.layout.count), !awaitingChapter { turn(true) }
-                if swipeStartPage == 0 && delta.x > 0 { parent.boundary(false) }
+                if swipeStartPage == 0 && delta.x > 0,
+                   !previousChapterReady(-1), !awaitingChapter { turn(false) }
             }
         }
         func gestureRecognizerShouldBegin(_ gesture: UIGestureRecognizer) -> Bool {
-            // Menu taps remain available while a page or the next chapter is prepared.
+            // Menu taps remain available while a page or either neighboring chapter is prepared.
             if gesture is UITapGestureRecognizer { return true }
             if awaitingChapter || loadingChapter { return false }
             if gesture === slidePan {
@@ -476,13 +519,16 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             }
             guard host.layout === currentLayout else { return nil }
             let page = host.index
-            guard page > 0,
-                  renderer?.cachedImage(page: page - 1) != nil else { return nil }
+            guard page > 0 || previousChapterReady(page - 1),
+                  pageImage(page - 1) != nil else { return nil }
             return self.host(page - 1)
         }
         func pageViewController(_ pageViewController: UIPageViewController, viewControllerAfter controller: UIViewController) -> UIViewController? {
-            guard let parent = parentValue, !awaitingChapter, !loadingChapter, let host = controller as? PageHost,
-                  host.layout === currentLayout else { return nil }
+            guard let parent = parentValue, !awaitingChapter, !loadingChapter, let host = controller as? PageHost else { return nil }
+            if host.layout === parent.previousLayout, host.index == -1 {
+                return self.host(0)
+            }
+            guard host.layout === currentLayout else { return nil }
             let page = host.index
             guard
                   page + 1 < parent.layout.count || nextChapterReady(page + 1),
@@ -493,7 +539,14 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             guard let parent = parentValue, page == parent.layout.count else { return false }
             return parent.nextLayout != nil && parent.nextRenderer?.cachedImage(page: 0) != nil
         }
+        private func previousChapterReady(_ page: Int) -> Bool {
+            guard let parent = parentValue, page == -1, let layout = parent.previousLayout, layout.count > 0 else { return false }
+            return parent.previousRenderer?.cachedImage(page: layout.count - 1) != nil
+        }
         private func pageImage(_ page: Int) -> UIImage? {
+            if let parent = parentValue, page == -1, let layout = parent.previousLayout {
+                return parent.previousRenderer?.cachedImage(page: layout.count - 1)
+            }
             if let parent = parentValue, page == parent.layout.count { return parent.nextRenderer?.cachedImage(page: 0) }
             return renderer?.cachedImage(page: page)
         }

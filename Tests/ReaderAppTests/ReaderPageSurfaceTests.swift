@@ -3,6 +3,96 @@ import Testing
 import TVCore
 
 @MainActor @Suite(.serialized) struct ReaderPageSurfaceTests {
+    @Test(arguments: [ReaderTurnStyle.slide, .curl, .cover])
+    func firstPageTurnsBackAndForwardWithoutReloading(style: ReaderTurnStyle) async throws {
+        let viewport = ReaderViewport(safeAreaSize: CGSize(width: 320, height: 500), safeAreaInsets: .zero)
+        let configuration = ReaderRenderConfiguration(viewport: viewport, script: "", fontName: "",
+            fontSize: 20, lineSpacing: 8, appearance: "day", ink: .black, background: .white,
+            image: nil, opacity: 0, scale: 1)
+        let previous = try await ReaderPreparedChapter.build(index: 0,
+            content: NovelContent(title: "上一章", paragraphs: [String(repeating: "上一章末页内容。", count: 130)]),
+            configuration: configuration, character: Int.max)
+        let current = try await ReaderPreparedChapter.build(index: 1,
+            content: NovelContent(title: "当前章", paragraphs: [String(repeating: "本章的第一页和第二页。", count: 130)]),
+            configuration: configuration)
+        var backward = 0, forward = 0, fallback = 0
+        var moves: [Int] = []
+        let controller = ReaderPageSurface.Controller()
+        func surface(_ chapter: ReaderPreparedChapter, page: Int) -> ReaderPageSurface {
+            ReaderPageSurface(layout: chapter.layout, renderer: chapter.renderer, viewport: viewport,
+                style: style, offset: chapter.layout.offset(page: page), background: .white,
+                backgroundImage: nil, backgroundOpacity: 0, animated: true,
+                tapFraction: 0.3, tapsEnabled: true, slideForwardRight: true,
+                moved: { _, page in moves.append(page) }, boundary: { _ in fallback += 1 }, center: {},
+                nextLayout: chapter.index == 0 ? current.layout : nil,
+                nextRenderer: chapter.index == 0 ? current.renderer : nil,
+                crossedChapter: { forward += 1 },
+                previousLayout: chapter.index == 1 ? previous.layout : nil,
+                previousRenderer: chapter.index == 1 ? previous.renderer : nil,
+                crossedPreviousChapter: { backward += 1 })
+        }
+        controller.configure(surface(current, page: 0))
+        let window = UIWindow(frame: CGRect(origin: .zero, size: viewport.size))
+        window.rootViewController = controller; window.makeKeyAndVisible()
+        controller.view.layoutIfNeeded()
+        defer { controller.invalidate(); window.isHidden = true }
+        let pager = controller.children.first
+        if let pager = pager as? UIPageViewController, let currentHost = pager.viewControllers?.first {
+            let preview = try #require(controller.pageViewController(pager, viewControllerBefore: currentHost) as? ReaderPageSurface.PageHost)
+            let canvas = try #require(preview.view as? ReaderPageSurface.PageCanvas)
+            #expect(canvas.accessibilityLabel == previous.layout.text.attributedSubstring(from: previous.layout.pageRanges.last!).string)
+            #expect(canvas.image != nil)
+            let returnHost = try #require(controller.pageViewController(pager, viewControllerAfter: preview) as? ReaderPageSurface.PageHost)
+            #expect(returnHost.layout === current.layout)
+            #expect(returnHost.index == 0)
+            controller.pageViewController(pager, willTransitionTo: [preview])
+            controller.pageViewController(pager, didFinishAnimating: true,
+                previousViewControllers: [currentHost], transitionCompleted: false)
+            #expect(backward == 0)
+        }
+        if style == .slide {
+            controller.slideChanged(translation: -16, velocity: 0, state: .began)
+            controller.slideChanged(translation: -65, velocity: 0, state: .changed)
+            controller.slideChanged(translation: -65, velocity: 0, state: .cancelled)
+            try await Task.sleep(for: .milliseconds(300))
+            #expect(backward == 0)
+        }
+        func turn(_ forward: Bool) {
+            if style == .slide {
+                let delta: CGFloat = forward ? 65 : -65
+                controller.slideChanged(translation: delta / 4, velocity: 0, state: .began)
+                controller.slideChanged(translation: delta, velocity: 0, state: .changed)
+                controller.slideChanged(translation: delta, velocity: 0, state: .ended)
+            } else { _ = controller.accessibilityScroll(forward ? .next : .previous) }
+        }
+        turn(false)
+        for _ in 0..<100 {
+            if backward == 1 { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(backward == 1)
+        #expect(fallback == 0)
+        controller.configure(surface(previous, page: previous.layout.count - 1))
+        turn(true)
+        for _ in 0..<100 {
+            if forward == 1 { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(forward == 1)
+        controller.configure(surface(current, page: 0))
+        turn(true)
+        for _ in 0..<100 {
+            if moves.last == 1 { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(moves == [1])
+        #expect(fallback == 0)
+        if style == .curl { #expect(controller.children.first === pager) }
+        let visible = (controller.children.first as? UIPageViewController)?.viewControllers?.first?.view
+            ?? controller.view.subviews.last
+        let canvas = try #require(visible as? ReaderPageSurface.PageCanvas)
+        #expect(canvas.accessibilityLabel == current.layout.text.attributedSubstring(from: current.layout.pageRanges[1]).string)
+    }
     @Test func menuRemainsAvailableWhileNextChapterLoads() async throws {
         let viewport = ReaderViewport(safeAreaSize: CGSize(width: 320, height: 500), safeAreaInsets: .zero)
         let configuration = ReaderRenderConfiguration(viewport: viewport, script: "", fontName: "",

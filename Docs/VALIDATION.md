@@ -1,5 +1,15 @@
 # Validation record
 
+## 1.3.6 / build 11 — 2026-11-25
+
+- Baseline: before edits, local files matched every entry in `YingxiaReader-iOS-1.3.5-source.zip`. Preserve 1.3.5 content prefetch/memory caching, ordinary book-detail catalog, highlighted in-reader catalog and menu access during loading.
+- Confirmed old backward path: slide target -1 and curl's first-page observer called boundary(false), which called jump/load/reflow and enabled the chapter preparation overlay. Previous chapters had no prepared renderer or native animation bridge. Add symmetric previous chapter layout/renderer/loading/adoption and retain the chapter just left for reverse turns.
+- Separate neighboring preparation tasks from current layout application; reuse the currently applied prepared chapter when content, settings and requested position already match. Explicit chapter selections can adopt an already rendered matching target without toggling loading. Normal first-to-second-page turns keep the same layout/renderer and do not call a chapter boundary.
+- Static review did not reproduce a correctly directed, within-chapter slide triggering boundary in 1.3.5; do not claim the exact device cause of that report has been measured. The added native test exercises first-page backward/forward transitions and then page two across slide/curl/cover, requiring zero fallback boundary calls and a retained curl controller.
+- Added reverse native preview/return queries and slide cancellation checks. Adjacent preparation completing during a same-chapter gesture does not invalidate that gesture. Current-configuration/index checks prevent a distant cached chapter from becoming a neighbor after a catalog jump.
+- Local project/resource checks, engine fixtures, Swift syntax parsing and YAML validation pass. No Xcode compiler, native test execution, IPA build or device frame timing is available on this Windows host. Actions continues to run native tests before packaging.
+- Device acceptance: for multiple consecutive chapters, immediately slide from page one to page two in both configured slide directions; in curl/cover turn from page one back to the preceding chapter's last page and return. Repeat after a directory jump, with cancellation, and with an uncached previous chapter. Prepared transitions must not show the whole-chapter loading overlay; actual missing content may still need preparation.
+
 ## 1.3.4 / build 9 — 2026-11-25
 
 - Forward chapter boundaries now provide the prepared next chapter's opening image to slide/cover animations and the native curl data source. Only a completed transition adopts the chapter; cancellation retains the old position. Adoption keeps the controller and prepared layout instead of restarting load/reflow. The next chapter is prepared through a shared task, and a boundary request can await it before animating.

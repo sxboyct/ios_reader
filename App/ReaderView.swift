@@ -20,6 +20,11 @@ struct ReaderView: View {
     @State private var layout: ReaderTextLayout?
     @State private var renderer: ReaderPageRenderer?
     @State private var preparedNext: ReaderPreparedChapter?
+    @State private var preparedCurrent: ReaderPreparedChapter?
+    @State private var preparedPrevious: ReaderPreparedChapter?
+    @State private var previousPreparation: Task<ReaderPreparedChapter, Error>?
+    @State private var previousPreparationKey: LayoutKey?
+    @State private var previousPreparationID = UUID()
     @State private var nextPreparation: Task<ReaderPreparedChapter, Error>?
     @State private var nextPreparationKey: LayoutKey?
     @State private var nextPreparationID = UUID()
@@ -97,14 +102,25 @@ struct ReaderView: View {
                                 guard !isLoading, loadedIndex == chapter, self.layout === identity else { return }
                                 boundary(forward)
                             }, center: { controls.toggle() },
-                            nextLayout: preparedNext?.configuration == configuration ? preparedNext?.layout : nil,
-                            nextRenderer: preparedNext?.configuration == configuration ? preparedNext?.renderer : nil,
+                            nextLayout: preparedNext?.index == neighbor(1) && preparedNext?.configuration == configuration ? preparedNext?.layout : nil,
+                            nextRenderer: preparedNext?.index == neighbor(1) && preparedNext?.configuration == configuration ? preparedNext?.renderer : nil,
                             crossedChapter: { adoptNext() },
                             loadNext: neighbor(1) == nil ? nil : {
                                 let requestedIndex = index
                                 await prepareNext(configuration: configuration)
-                                guard requestedIndex == index, preparedNext?.configuration == configuration else { return nil }
+                                guard requestedIndex == index, preparedNext?.index == neighbor(1),
+                                      preparedNext?.configuration == configuration else { return nil }
                                 return preparedNext
+                            },
+                            previousLayout: preparedPrevious?.index == neighbor(-1) && preparedPrevious?.configuration == configuration ? preparedPrevious?.layout : nil,
+                            previousRenderer: preparedPrevious?.index == neighbor(-1) && preparedPrevious?.configuration == configuration ? preparedPrevious?.renderer : nil,
+                            crossedPreviousChapter: { adoptPrevious() },
+                            loadPrevious: neighbor(-1) == nil ? nil : {
+                                let requestedIndex = index
+                                await preparePrevious(configuration: configuration)
+                                guard requestedIndex == index, preparedPrevious?.index == neighbor(-1),
+                                      preparedPrevious?.configuration == configuration else { return nil }
+                                return preparedPrevious
                             })
                             .overlay {
                                 if isLoading {
@@ -143,6 +159,14 @@ struct ReaderView: View {
                     guard !Task.isCancelled, geometry.size.width > 0, geometry.size.height > 0 else { return }
                     await reflow(configuration: configuration)
                 }
+                .task(id: NeighborKey(index: index, revision: revision, configuration: configuration, ready: !isLoading && loadedIndex == index)) {
+                    guard !isLoading, loadedIndex == index else { return }
+                    await prepareNext(configuration: configuration)
+                }
+                .task(id: NeighborKey(index: index, revision: revision, configuration: configuration, ready: !isLoading && loadedIndex == index)) {
+                    guard !isLoading, loadedIndex == index else { return }
+                    await preparePrevious(configuration: configuration)
+                }
             }
             if showProgress && !controls {
                 VStack { Spacer(); Text(progressText).font(.caption2).padding(.bottom, 2) }
@@ -174,7 +198,7 @@ struct ReaderView: View {
             try? await Task.sleep(for: .seconds(4))
             if !Task.isCancelled { notice = nil }
         }
-        .onDisappear { saveTask?.cancel(); nextPreparation?.cancel(); record(); library.flushShelf() }
+        .onDisappear { saveTask?.cancel(); nextPreparation?.cancel(); previousPreparation?.cancel(); record(); library.flushShelf() }
         .onChange(of: scenePhase) { _, value in
             if value != .active { saveTask?.cancel(); record(); library.flushShelf() }
         }
@@ -381,8 +405,14 @@ struct ReaderView: View {
     }
     private func reflow(configuration: ReaderRenderConfiguration) async {
         guard let content, loadedIndex == index, loadedRevision == revision else { return }
+        if let preparedCurrent, preparedCurrent.index == index,
+           preparedCurrent.content == content, preparedCurrent.configuration == configuration,
+           layout === preparedCurrent.layout, renderer === preparedCurrent.renderer,
+           !restorePending || preparedCurrent.offset(position: resumePosition, character: resumeOffset) == characterOffset {
+            restorePending = false; isLoading = false
+            return
+        }
         if !restorePending, appliedConfiguration == configuration, layout != nil {
-            await prepareNext(configuration: configuration)
             return
         }
         isLoading = true
@@ -392,8 +422,9 @@ struct ReaderView: View {
         let requestedContent = contentRevision
         do {
             let prepared: ReaderPreparedChapter
-            if let candidate = preparedNext, candidate.index == index, candidate.content == content,
-               candidate.configuration == configuration {
+            if let candidate = [preparedCurrent, preparedNext, preparedPrevious].compactMap({ $0 }).first(where: {
+                $0.index == index && $0.content == content && $0.configuration == configuration
+            }) {
                 prepared = candidate
             } else {
                 prepared = try await ReaderPreparedChapter.build(index: index, content: content, configuration: configuration,
@@ -411,9 +442,11 @@ struct ReaderView: View {
                   requestedContent == contentRevision else { return }
             characterOffset = offset; page = prepared.layout.page(containing: offset)
             layout = prepared.layout; renderer = prepared.renderer; appliedConfiguration = configuration
-            restorePending = false; isLoading = false; preparedNext = nil
+            preparedCurrent = prepared
+            restorePending = false; isLoading = false
+            if preparedNext?.index == index { preparedNext = nil }
+            if preparedPrevious?.index == index { preparedPrevious = nil }
             record()
-            await prepareNext(configuration: configuration)
         } catch {
             if !Task.isCancelled, requestedIndex == index, requestedRevision == revision, isLoading {
                 failure = error.localizedDescription; layout = nil; renderer = nil; isLoading = false
@@ -422,7 +455,10 @@ struct ReaderView: View {
     }
     private func prepareNext(configuration: ReaderRenderConfiguration) async {
         guard let next = neighbor(1) else { preparedNext = nil; return }
-        if preparedNext?.index == next, preparedNext?.configuration == configuration { return }
+        if let preparedNext, preparedNext.index == next, preparedNext.configuration == configuration {
+            await preparedNext.renderer.prepareAsync(around: 0)
+            return
+        }
         let requestedIndex = index
         let requestedRevision = revision
         let key = LayoutKey(contentRevision: contentRevision, revision: revision, configuration: configuration)
@@ -452,14 +488,59 @@ struct ReaderView: View {
     private func adoptNext() {
         guard let prepared = preparedNext, prepared.index == neighbor(1),
               prepared.configuration == appliedConfiguration else { return }
+        preparedPrevious = preparedCurrent
+        adopt(prepared, page: 0)
+        preparedNext = nil
+    }
+    private func adoptPrevious() {
+        guard let prepared = preparedPrevious, prepared.index == neighbor(-1),
+              prepared.configuration == appliedConfiguration else { return }
+        preparedNext = preparedCurrent
+        adopt(prepared, page: prepared.layout.count - 1)
+        preparedPrevious = nil
+    }
+    private func adopt(_ prepared: ReaderPreparedChapter, page targetPage: Int) {
         saveTask?.cancel(); record()
         index = prepared.index; content = prepared.content
         layout = prepared.layout; renderer = prepared.renderer
-        characterOffset = 0; page = 0; resumePosition = 0; resumeOffset = 0
+        preparedCurrent = prepared
+        characterOffset = prepared.layout.offset(page: targetPage); page = targetPage
+        resumePosition = 0; resumeOffset = characterOffset
         revision = UUID(); contentRevision = UUID()
         loadedIndex = index; loadedRevision = revision
-        restorePending = false; isLoading = false; preparedNext = nil; failure = nil
+        restorePending = false; isLoading = false; failure = nil
         record()
+    }
+    private func preparePrevious(configuration: ReaderRenderConfiguration) async {
+        guard let previous = neighbor(-1) else { preparedPrevious = nil; return }
+        if let preparedPrevious, preparedPrevious.index == previous, preparedPrevious.configuration == configuration {
+            await preparedPrevious.renderer.prepareAsync(around: preparedPrevious.layout.count - 1)
+            return
+        }
+        let requestedIndex = index
+        let key = LayoutKey(contentRevision: contentRevision, revision: revision, configuration: configuration)
+        var taskID = previousPreparationID
+        do {
+            let task: Task<ReaderPreparedChapter, Error>
+            if previousPreparationKey == key, let running = previousPreparation { task = running }
+            else {
+                previousPreparation?.cancel()
+                taskID = UUID(); previousPreparationID = taskID
+                task = Task {
+                    let previousContent = try await NovelBooks.shared.content(book, chapters: chapters, index: previous)
+                    try Task.checkCancellation()
+                    return try await ReaderPreparedChapter.build(index: previous, content: previousContent,
+                        configuration: configuration, character: Int.max, priority: .utility)
+                }
+                previousPreparationKey = key; previousPreparation = task
+            }
+            let prepared = try await task.value
+            guard !Task.isCancelled, index == requestedIndex, revision == key.revision,
+                  contentRevision == key.contentRevision, previousPreparationID == taskID else { return }
+            preparedPrevious = prepared
+        } catch {
+            if previousPreparationID == taskID { previousPreparation = nil; previousPreparationKey = nil }
+        }
     }
     private func moved(_ offset: Int, _ page: Int) {
         characterOffset = offset; self.page = page
@@ -497,6 +578,19 @@ struct ReaderView: View {
         return nil
     }
     private func jump(_ next: Int, position: Double = 0, offset: Int? = nil) {
+        if !refreshChapter, let prepared = [preparedCurrent, preparedNext, preparedPrevious].compactMap({ $0 }).first(where: {
+            $0.index == next && $0.configuration == appliedConfiguration
+        }) {
+            let targetPage = prepared.layout.page(containing: prepared.offset(position: position, character: offset))
+            if prepared.renderer.cachedImage(page: targetPage) != nil {
+                if next > index { preparedPrevious = preparedCurrent }
+                else if next < index { preparedNext = preparedCurrent }
+                adopt(prepared, page: targetPage)
+                if preparedNext?.index == next { preparedNext = nil }
+                if preparedPrevious?.index == next { preparedPrevious = nil }
+                return
+            }
+        }
         saveTask?.cancel(); record(); isLoading = true; loadedRevision = nil
         resumePosition = position; resumeOffset = offset; index = next; revision = UUID()
     }
@@ -504,5 +598,11 @@ struct ReaderView: View {
         let contentRevision: UUID
         let revision: UUID
         let configuration: ReaderRenderConfiguration
+    }
+    private struct NeighborKey: Equatable {
+        let index: Int
+        let revision: UUID
+        let configuration: ReaderRenderConfiguration
+        let ready: Bool
     }
 }
