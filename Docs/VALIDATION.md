@@ -1,5 +1,14 @@
 # Validation record
 
+## 1.3.7 / build 12 — 2026-11-25
+
+- User clarified that leftward dragging at the start of a chapter shows the preceding chapter's final page, then continues reading backward. The old slide default `reader.slideForwardRight = true` maps precisely to that behavior; other styles map leftward swipes forward. Set slide's new `reader.slideReversed` preference to false by default, including upgrades (do not inherit the old inverse preference). The settings toggle explicitly offers reverse slide direction. Tap left/right semantics remain previous/next.
+- Slide gestures retain their source page/direction and the image retrieved from cache. Avoid the separate check-and-fetch window that could yield an image-less preview during background eviction. Only finished animations with a matching target and complete image commit; cancellation/interruption retains the source. Explicit offset/direction changes invalidate an active slide instead of being overwritten by its late completion.
+- Without a prepared target image the current canvas stays in place, rather than moving it aside to expose the text-free backdrop. Other transition styles and shared text pagination are unchanged.
+- Added native pan-sequence tests for every page forward/backward in both configured directions, text reconstruction, direction reversal mid-drag, duplicate ended events, interrupted settle, cache eviction, missing-preview coverage, and an external position update during animation. Existing cross-chapter tests now also exercise the standard left-to-next direction.
+- Local project/resource and offline engine checks plus Swift syntax/YAML checks pass. Native tests run in the existing GitHub Actions workflow; this Windows session cannot claim Swift type-checking, a successful IPA build or on-device verification.
+- Acceptance: upgrade over 1.3.6, open the reported chapter and swipe left repeatedly. It must show page two and subsequent pages of that chapter, reaching the next chapter only after its last page. Swipe right to reverse; verify the explicit reverse toggle, interrupted/short drags and rapid turns. Confirm ordinary curl/cover behavior and saved position restoration.
+
 ## 1.3.6 / build 11 — 2026-11-25
 
 - Baseline: before edits, local files matched every entry in `YingxiaReader-iOS-1.3.5-source.zip`. Preserve 1.3.5 content prefetch/memory caching, ordinary book-detail catalog, highlighted in-reader catalog and menu access during loading.

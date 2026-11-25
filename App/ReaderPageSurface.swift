@@ -80,6 +80,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         private var slideTarget: Int?
         private var slideSign: CGFloat = 1
         private var draggingSlide = false
+        private var slideSource: ReaderPageSurface?
+        private var slideSourcePage: Int?
         private var awaitingChapter = false
         private var crossingLayout: ReaderTextLayout?
         private var loadingChapter = false
@@ -106,6 +108,9 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             loadViewIfNeeded()
             let nextChanged = parentValue?.nextLayout !== parent.nextLayout || parentValue?.nextRenderer !== parent.nextRenderer
             let previousChanged = parentValue?.previousLayout !== parent.previousLayout || parentValue?.previousRenderer !== parent.previousRenderer
+            let slideDirectionChanged = parentValue?.slideForwardRight != parent.slideForwardRight
+            let slidePositionChanged = currentStyle == .slide && animating
+                && parentValue?.offset != parent.offset && parent.offset != currentOffset
             let crossingChanged = crossingLayout != nil &&
                 ((crossingLayout === parentValue?.nextLayout && nextChanged)
                     || (crossingLayout === parentValue?.previousLayout && previousChanged))
@@ -126,7 +131,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 backdrop.image = renderer?.background
             }
             if renderingChanged || currentStyle != parent.style || currentAnimation != parent.animated
-                || (animating && crossingChanged) {
+                || (animating && crossingChanged) || (currentStyle == .slide && animating && slideDirectionChanged)
+                || slidePositionChanged {
                 generation += 1; animating = false
                 currentLayout = parent.layout; currentStyle = parent.style; currentAnimation = parent.animated
                 currentOffset = min(max(0, parent.offset), max(0, parent.layout.text.length - 1))
@@ -157,6 +163,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             crossingLayout = nil
             loadingChapter = false
             draggingSlide = false; slideTarget = nil
+            slideSource = nil; slideSourcePage = nil
             slidePreview?.removeFromSuperview(); slidePreview = nil
             canvas?.removeFromSuperview(); canvas = nil
             textView?.removeFromSuperview(); textView = nil
@@ -389,9 +396,14 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 next.transform = .identity; next.alpha = 1
                 if parent.style == .fade { old.alpha = 0 }
                 else if parent.style != .cover || !forward { old.transform = vector.inverted() }
-            } completion: { [weak self] _ in
-                old.removeFromSuperview()
+            } completion: { [weak self] finished in
                 guard let self, self.generation == token else { next.removeFromSuperview(); return }
+                if parent.style == .slide, !finished {
+                    next.removeFromSuperview(); old.transform = .identity
+                    self.animating = false; self.crossingLayout = nil; self.scheduleWarm()
+                    return
+                }
+                old.removeFromSuperview()
                 self.canvas = next; self.animating = false; self.commit(target)
             }
         }
@@ -399,19 +411,20 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             slideChanged(translation: gesture.translation(in: view).x, velocity: gesture.velocity(in: view).x, state: gesture.state)
         }
         func slideChanged(translation: CGFloat, velocity: CGFloat, state: UIGestureRecognizer.State) {
-            guard let parent = parentValue, parent.style == .slide, !awaitingChapter, let old = canvas else { return }
+            guard let latest = parentValue, latest.style == .slide, !awaitingChapter, let old = canvas else { return }
             let width = max(1, view.bounds.width)
             let delta = max(-width, min(width, translation))
             switch state {
             case .began:
                 guard !animating else { return }
+                slideSource = latest; slideSourcePage = currentPage
                 draggingSlide = true; animating = true
-                updateSlide(delta: delta, width: width, old: old, parent: parent)
+                updateSlide(delta: delta, width: width, old: old, parent: latest)
             case .changed:
-                guard draggingSlide else { return }
+                guard draggingSlide, let parent = slideSource else { return }
                 updateSlide(delta: delta, width: width, old: old, parent: parent)
             case .ended, .cancelled, .failed:
-                guard draggingSlide else { return }
+                guard draggingSlide, let parent = slideSource, let sourcePage = slideSourcePage else { return }
                 draggingSlide = false
                 updateSlide(delta: delta, width: width, old: old, parent: parent)
                 let forward = ReaderSlideTurn.committedForward(translation: Double(delta), width: Double(width),
@@ -420,23 +433,28 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 let preview = slidePreview
                 let target = slideTarget
                 let token = generation
-                let commitPage = forward != nil && preview != nil
+                let expectedTarget = forward.map { sourcePage + ($0 ? 1 : -1) }
+                let commitPage = forward != nil && target == expectedTarget && preview?.image != nil
+                let direction = slideSign
                 let endX: CGFloat = commitPage ? slideSign * width : 0
                 let duration = parent.animated ? (forward == nil ? 0.18 : 0.22) : 0
                 UIView.animate(withDuration: duration, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) {
                     old.transform = CGAffineTransform(translationX: endX, y: 0)
-                    preview?.transform = CGAffineTransform(translationX: endX - self.slideSign * width, y: 0)
-                } completion: { [weak self] _ in
+                    preview?.transform = CGAffineTransform(translationX: endX - direction * width, y: 0)
+                } completion: { [weak self] finished in
                     guard let self, self.generation == token else { preview?.removeFromSuperview(); return }
+                    self.slideSource = nil; self.slideSourcePage = nil
                     self.slidePreview = nil; self.slideTarget = nil; self.animating = false
-                    if commitPage, let preview, let target {
+                    if finished, commitPage, self.currentPage == sourcePage,
+                       self.currentLayout === parent.layout, let preview, let target {
                         old.removeFromSuperview(); preview.transform = .identity
+                        self.place(preview)
                         self.canvas = preview; self.commit(target)
                     } else {
                         self.crossingLayout = nil
                         old.transform = .identity; preview?.removeFromSuperview()
                         self.scheduleWarm()
-                        if let forward {
+                        if finished, let forward, self.currentPage == sourcePage, self.currentLayout === parent.layout {
                             if let target, target >= -1, target <= parent.layout.count { self.turn(forward) }
                             else { self.parentValue?.boundary(forward) }
                         }
@@ -448,18 +466,17 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         private func updateSlide(delta: CGFloat, width: CGFloat, old: PageCanvas, parent: ReaderPageSurface) {
             slideSign = delta < 0 ? -1 : 1
             let forward = (slideSign > 0) == parent.slideForwardRight
-            let target = currentPage + (forward ? 1 : -1)
-            crossingLayout = target == -1 ? parent.previousLayout : target == parent.layout.count ? parent.nextLayout : nil
+            let target = (slideSourcePage ?? currentPage) + (forward ? 1 : -1)
+            crossingLayout = target == -1 ? parentValue?.previousLayout : target == parent.layout.count ? parentValue?.nextLayout : nil
             if slideTarget != target || slidePreview == nil {
                 slidePreview?.removeFromSuperview(); slidePreview = nil; slideTarget = target
                 if (parent.layout.pageRanges.indices.contains(target) || nextChapterReady(target) || previousChapterReady(target)),
-                   pageImage(target) != nil {
-                    let preview = makeCanvas(target)
+                   let targetImage = pageImage(target) {
+                    let preview = makeCanvas(target, image: targetImage)
                     place(preview); view.addSubview(preview); slidePreview = preview
                 }
             }
-            // At chapter boundaries, resist the drag instead of showing an empty page.
-            let x: CGFloat = parent.animated ? (slidePreview == nil ? delta * 0.18 : delta) : 0
+            let x: CGFloat = parent.animated && slidePreview?.image != nil ? delta : 0
             old.transform = CGAffineTransform(translationX: x, y: 0)
             slidePreview?.transform = CGAffineTransform(translationX: x - slideSign * width, y: 0)
         }

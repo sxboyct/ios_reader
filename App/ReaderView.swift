@@ -55,7 +55,7 @@ struct ReaderView: View {
     @AppStorage("reader.script") private var script = ""
     @AppStorage("reader.turnStyle") private var turnStyle = ReaderTurnStyle.slide.rawValue
     @AppStorage("reader.turnAnimation") private var turnAnimation = true
-    @AppStorage("reader.slideForwardRight") private var slideForwardRight = true
+    @AppStorage("reader.slideReversed") private var slideForwardRight = false
     @AppStorage("reader.tapTurns") private var tapTurns = true
     @AppStorage("reader.tapFraction") private var tapFraction = 0.3
     @AppStorage("reader.hideStatusBar") private var hideStatusBar = true
@@ -317,8 +317,8 @@ struct ReaderView: View {
                         }
                     }
                     if style == .slide {
-                        Toggle("右滑进入下一页", isOn: $slideForwardRight)
-                        Text("页面跟随手指移动，短距离滑动或轻快一划即可翻页，无需超过半屏；不足距离时回弹。关闭上方选项后，左滑进入下一页。")
+                        Toggle("反向平移（右滑下一页）", isOn: $slideForwardRight)
+                        Text("默认左滑下一页、右滑上一页，与仿真和覆盖一致。页面跟随手指移动，短距离滑动或轻快一划即可翻页，无需超过半屏；不足距离时回弹。开启反向平移后交换左右方向。")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     Toggle("翻页动画", isOn: $turnAnimation)

@@ -22,7 +22,7 @@ import TVCore
             ReaderPageSurface(layout: chapter.layout, renderer: chapter.renderer, viewport: viewport,
                 style: style, offset: chapter.layout.offset(page: page), background: .white,
                 backgroundImage: nil, backgroundOpacity: 0, animated: true,
-                tapFraction: 0.3, tapsEnabled: true, slideForwardRight: true,
+                tapFraction: 0.3, tapsEnabled: true, slideForwardRight: false,
                 moved: { _, page in moves.append(page) }, boundary: { _ in fallback += 1 }, center: {},
                 nextLayout: chapter.index == 0 ? current.layout : nil,
                 nextRenderer: chapter.index == 0 ? current.renderer : nil,
@@ -51,15 +51,15 @@ import TVCore
             #expect(backward == 0)
         }
         if style == .slide {
-            controller.slideChanged(translation: -16, velocity: 0, state: .began)
-            controller.slideChanged(translation: -65, velocity: 0, state: .changed)
-            controller.slideChanged(translation: -65, velocity: 0, state: .cancelled)
+            controller.slideChanged(translation: 16, velocity: 0, state: .began)
+            controller.slideChanged(translation: 65, velocity: 0, state: .changed)
+            controller.slideChanged(translation: 65, velocity: 0, state: .cancelled)
             try await Task.sleep(for: .milliseconds(300))
             #expect(backward == 0)
         }
         func turn(_ forward: Bool) {
             if style == .slide {
-                let delta: CGFloat = forward ? 65 : -65
+                let delta: CGFloat = forward ? -65 : 65
                 controller.slideChanged(translation: delta / 4, velocity: 0, state: .began)
                 controller.slideChanged(translation: delta, velocity: 0, state: .changed)
                 controller.slideChanged(translation: delta, velocity: 0, state: .ended)
