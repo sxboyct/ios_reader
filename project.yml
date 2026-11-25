@@ -29,8 +29,8 @@ targets:
       path: Config/iOS/Info.plist
       properties:
         CFBundleDisplayName: 映夏阅读
-        CFBundleShortVersionString: '1.3.2'
-        CFBundleVersion: '7'
+        CFBundleShortVersionString: '1.3.3'
+        CFBundleVersion: '8'
         LSSupportsOpeningDocumentsInPlace: true
         CFBundleDocumentTypes:
           - CFBundleTypeName: Book Source JSON
@@ -69,6 +69,8 @@ targets:
     type: bundle.unit-test
     platform: iOS
     sources:
+      - path: App/ReaderPageSurface.swift
+      - path: Tests/ReaderAppTests
       - path: Tests/ReaderCoreTests
         excludes: [Fixtures]
       - path: Tests/ReaderCoreTests/Fixtures

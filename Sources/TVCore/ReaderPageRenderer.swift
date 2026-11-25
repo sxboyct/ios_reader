@@ -22,7 +22,9 @@ public final class ReaderPageRenderer: @unchecked Sendable {
             format.opaque = true
             if scale > 0 { format.scale = scale }
             return UIGraphicsImageRenderer(size: viewport.size, format: format).image { context in
-                color.setFill(); context.fill(CGRect(origin: .zero, size: viewport.size))
+                color.setFill(); context.fill(CGRect(x: 0, y: 0,
+                    width: ceil(viewport.size.width * format.scale) / format.scale,
+                    height: ceil(viewport.size.height * format.scale) / format.scale))
                 if let image, image.size.width > 0, image.size.height > 0 {
                     let factor = max(viewport.size.width / image.size.width, viewport.size.height / image.size.height)
                     let size = CGSize(width: image.size.width * factor, height: image.size.height * factor)

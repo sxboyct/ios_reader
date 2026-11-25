@@ -90,7 +90,8 @@ import Testing
             await renderer.prepareAsync(around: page)
             let actual = try #require(renderer.cachedImage(page: page)?.cgImage)
             let expected = try #require(referencePage(layout: layout, viewport: viewport, page: page).cgImage)
-            #expect(pixels(actual) == pixels(expected))
+            let identical = pixels(actual) == pixels(expected)
+            #expect(identical, "Rendered page \(page) differs from the reference frame")
             #expect(renderer.cachedPages.count <= 3)
             #expect(renderer.cachedPages.contains(page))
             #expect(layout.pageRanges == ranges)
@@ -99,7 +100,7 @@ import Testing
         let retained = try #require(prepared)
         await renderer.prepareAsync(around: layout.count - 1)
         #expect(renderer.cachedImage(page: 0) == nil)
-        #expect(retained.image.size == viewport.size)
+        #expect(retained.image.size == CGSize(width: ceil(viewport.size.width), height: ceil(viewport.size.height)))
         let firstRenderer = renderer
         let secondLayout = ReaderTextLayout(content: NovelContent(title: "下一章", paragraphs: ["独立的新章节内容"]),
             size: viewport.contentFrame.size, fontName: "", fontSize: 20, lineSpacing: 8, color: .black)
@@ -121,7 +122,8 @@ import Testing
             let format = UIGraphicsImageRendererFormat()
             format.scale = 1; format.opaque = true
             return UIGraphicsImageRenderer(size: viewport.size, format: format).image { context in
-                UIColor.white.setFill(); context.fill(CGRect(origin: .zero, size: viewport.size))
+                UIColor.white.setFill(); context.fill(CGRect(x: 0, y: 0,
+                    width: ceil(viewport.size.width), height: ceil(viewport.size.height)))
                 context.cgContext.clip(to: viewport.contentFrame)
                 context.cgContext.textMatrix = .identity
                 context.cgContext.translateBy(x: viewport.contentFrame.minX,

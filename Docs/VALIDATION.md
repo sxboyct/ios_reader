@@ -1,5 +1,15 @@
 # Validation record
 
+## 1.3.3 / build 8 — 2026-11-25
+
+- Supplied diagnostics contain no compiler `error:` lines. The simulator ran 40 tests; one rendering test produced 16 issues and stopped the workflow before device packaging. Fifteen issues compare raster pixels; another compares the rounded 273 × 446 image with a 272.5 × 445.5 point viewport at scale 1.
+- Inspection of the first failed pixel arrays found 718 differing channels on the last pixel column/row. The reference filled only fractional bounds, leaving partial edge coverage. Fill the entire rounded bitmap in both the background and independent reference, and assert rounded image dimensions. Preserve exact pixel equality; report a boolean mismatch with a page number instead of dumping megabytes of pixel arrays.
+- Start neighboring-page preparation immediately, independently of a pending turn. Keep the rendered target image alive through the transition rather than looking it up again after cache eviction. Curl data-source requests return only prepared images. Position translated canvases through bounds/center and avoid resizing the curl container mid-animation.
+- Explicitly use TextKit 1 for the scrolling text view and finish layout before restoring a character position, so the bottom clamp uses the complete chapter height.
+- Add Xcode-only application controller tests for slide/cover/vertical/fade/curl forward and reverse sequences, complete visible page labels, image availability, one commit per turn and scroll restoration to a long chapter's end. SwiftPM core tests remain independent of App sources.
+- Local project/resource checks, offline engine tests and Swift syntax parsing pass. Native tests, IPA packaging and device frame-time/gesture verification have NOT been run in this Windows environment. The supplied log demonstrates execution of the previous build, not success of this revision.
+- After the new Actions run passes, verify short drags, rapid repeated turns, reversed/cancelled drags, curl gestures, chapter boundaries and scrolling with the reported book/font. The controller tests exercise programmatic animated turns; they do not replace real gesture/performance testing.
+
 ## 1.3.2 / build 7 — 2026-11-25
 
 Changes for chapter-transition stalls and incomplete later pages:

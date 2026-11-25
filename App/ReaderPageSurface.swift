@@ -51,6 +51,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         private var renderer: ReaderPageRenderer?
         private var currentViewport: ReaderViewport?
         private var warmTask: Task<Void, Never>?
+        private var turnTask: Task<Void, Never>?
         private var currentLayout: ReaderTextLayout?
         private var currentStyle: ReaderTurnStyle?
         private var currentAnimation = true
@@ -115,15 +116,15 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         override func viewDidLayoutSubviews() {
             super.viewDidLayoutSubviews()
             backdrop.frame = view.bounds
-            if !animating { canvas?.frame = view.bounds }
-            curl?.view.frame = view.bounds
+            if !animating, let canvas { place(canvas) }
+            if !animating { curl?.view.frame = view.bounds }
             if let frame = parentValue?.viewport.contentFrame { textView?.frame = frame }
             if pendingScrollRestore, let textView, view.bounds.width > 0, view.bounds.height > 0 {
                 pendingScrollRestore = false; restoreScroll(textView)
             }
         }
         private func rebuild() {
-            warmTask?.cancel()
+            warmTask?.cancel(); turnTask?.cancel()
             draggingSlide = false; slideTarget = nil
             slidePreview?.removeFromSuperview(); slidePreview = nil
             canvas?.removeFromSuperview(); canvas = nil
@@ -135,7 +136,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             curl = nil
             guard let parent = parentValue else { return }
             if parent.style == .scroll {
-                let text = UITextView(frame: parent.viewport.contentFrame)
+                let text = UITextView(usingTextLayoutManager: false)
+                text.frame = parent.viewport.contentFrame
                 text.isEditable = false; text.isSelectable = false
                 text.backgroundColor = .clear; text.attributedText = parent.layout.text
                 text.textContainerInset = .zero; text.textContainer.lineFragmentPadding = 0
@@ -151,14 +153,19 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 for recognizer in pager.gestureRecognizers where recognizer is UITapGestureRecognizer { recognizer.isEnabled = false }
                 curl = pager
             } else { showCanvas() }
+            scheduleWarm()
+        }
+        private func place(_ page: UIView) {
+            page.bounds = CGRect(origin: .zero, size: view.bounds.size)
+            page.center = CGPoint(x: view.bounds.midX, y: view.bounds.midY)
         }
         private func host(_ page: Int) -> PageHost {
             let host = PageHost(layout: parentValue!.layout, index: page, image: renderer?.cachedImage(page: page))
             if let canvas = host.view as? PageCanvas { finishRendering(canvas, page: page) }
             return host
         }
-        private func makeCanvas(_ page: Int) -> PageCanvas {
-            let canvas = PageCanvas(layout: parentValue!.layout, page: page, image: renderer?.cachedImage(page: page))
+        private func makeCanvas(_ page: Int, image: UIImage? = nil) -> PageCanvas {
+            let canvas = PageCanvas(layout: parentValue!.layout, page: page, image: image ?? renderer?.cachedImage(page: page))
             finishRendering(canvas, page: page)
             return canvas
         }
@@ -175,7 +182,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             guard parentValue != nil else { return }
             canvas?.removeFromSuperview()
             let next = makeCanvas(currentPage)
-            next.frame = view.bounds; view.addSubview(next); canvas = next
+            place(next); view.addSubview(next); canvas = next
         }
         private func commit(_ page: Int) {
             guard let parent = parentValue else { return }
@@ -186,27 +193,33 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         private func scheduleWarm() {
             warmTask?.cancel()
             let token = generation
+            let page = currentPage
+            guard let renderer, textView == nil else { return }
+            curl?.view.isUserInteractionEnabled = false
             warmTask = Task { @MainActor [weak self] in
-                do { try await Task.sleep(for: .milliseconds(60)) } catch { return }
-                guard let self, self.generation == token, !self.animating, self.textView == nil else { return }
-                await self.renderer?.prepareAsync(around: self.currentPage)
+                guard !Task.isCancelled else { return }
+                await renderer.prepareAsync(around: page)
+                guard let self, !Task.isCancelled, self.generation == token, self.currentPage == page else { return }
+                self.curl?.view.isUserInteractionEnabled = true
             }
         }
         func invalidate() {
-            generation += 1; warmTask?.cancel(); parentValue = nil
+            generation += 1; warmTask?.cancel(); turnTask?.cancel(); parentValue = nil
         }
         private func prepareTurn(_ forward: Bool, target: Int) {
             guard let renderer else { return }
             let token = generation
             animating = true
-            warmTask = Task { @MainActor [weak self] in
-                await renderer.prepareAsync(around: target)
+            turnTask = Task { @MainActor [weak self] in
+                let rendered = await renderer.preparePage(target)
                 guard let self, !Task.isCancelled, self.generation == token else { return }
-                self.animating = false; self.warmTask = nil; self.turn(forward)
+                self.animating = false; self.turnTask = nil
+                if let rendered { self.turn(forward, preparedImage: rendered.image) }
             }
         }
         private func restoreScroll(_ text: UITextView) {
             restoringScroll = true
+            text.layoutManager.ensureLayout(for: text.textContainer)
             text.layoutIfNeeded()
             let at = min(currentOffset, max(0, text.textStorage.length - 1))
             let glyph = text.layoutManager.glyphRange(forCharacterRange: NSRange(location: at, length: 1), actualCharacterRange: nil)
@@ -214,9 +227,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             text.setContentOffset(CGPoint(x: 0, y: min(rect.minY, max(0, text.contentSize.height - text.bounds.height))), animated: false)
             restoringScroll = false
         }
-        private func turn(_ forward: Bool) {
+        private func turn(_ forward: Bool, preparedImage: UIImage? = nil) {
             guard let parent = parentValue, !animating else { return }
-            warmTask?.cancel()
             if let textView {
                 let maxY = max(0, textView.contentSize.height - textView.bounds.height)
                 let y = textView.contentOffset.y
@@ -226,20 +238,25 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             }
             let target = currentPage + (forward ? 1 : -1)
             guard target >= 0 && target < parent.layout.count else { parent.boundary(forward); return }
-            guard renderer?.cachedImage(page: target) != nil else { prepareTurn(forward, target: target); return }
+            guard let targetImage = preparedImage ?? renderer?.cachedImage(page: target) else {
+                prepareTurn(forward, target: target); return
+            }
             let token = generation
             if let curl {
                 animating = true
-                curl.setViewControllers([host(target)], direction: forward ? .forward : .reverse, animated: parent.animated) { [weak self] finished in
+                let targetHost = PageHost(layout: parent.layout, index: target, image: targetImage)
+                curl.setViewControllers([targetHost], direction: forward ? .forward : .reverse, animated: parent.animated) { [weak self] finished in
                     guard let self, self.generation == token else { return }
                     self.animating = false
                     if finished { self.commit(target) }
                 }
                 return
             }
-            guard parent.animated, let old = canvas else { commit(target); showCanvas(); return }
-            let next = makeCanvas(target)
-            next.frame = view.bounds
+            let next = makeCanvas(target, image: targetImage)
+            place(next)
+            guard parent.animated, let old = canvas else {
+                canvas?.removeFromSuperview(); view.addSubview(next); canvas = next; commit(target); return
+            }
             let distance = parent.style == .vertical ? view.bounds.height : view.bounds.width
             let forwardSign = parent.style == .slide && parent.slideForwardRight ? -1.0 : 1.0
             let translation = (forward ? forwardSign : -forwardSign) * distance
@@ -265,7 +282,6 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             switch gesture.state {
             case .began:
                 guard !animating else { return }
-                warmTask?.cancel()
                 draggingSlide = true; animating = true
                 updateSlide(delta: delta, width: width, old: old, parent: parent)
             case .changed:
@@ -313,7 +329,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 slidePreview?.removeFromSuperview(); slidePreview = nil; slideTarget = target
                 if target >= 0 && target < parent.layout.count, renderer?.cachedImage(page: target) != nil {
                     let preview = makeCanvas(target)
-                    preview.frame = view.bounds; view.addSubview(preview); slidePreview = preview
+                    place(preview); view.addSubview(preview); slidePreview = preview
                 }
             }
             // At chapter boundaries, resist the drag instead of showing an empty page.
@@ -364,15 +380,18 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             return gesture is UIPanGestureRecognizer || other is UIPanGestureRecognizer
         }
         func pageViewController(_ pageViewController: UIPageViewController, viewControllerBefore controller: UIViewController) -> UIViewController? {
-            guard let page = (controller as? PageHost)?.index, page > 0 else { return nil }
+            guard let page = (controller as? PageHost)?.index, page > 0,
+                  renderer?.cachedImage(page: page - 1) != nil else { return nil }
             return host(page - 1)
         }
         func pageViewController(_ pageViewController: UIPageViewController, viewControllerAfter controller: UIViewController) -> UIViewController? {
-            guard let parent = parentValue, let page = (controller as? PageHost)?.index, page + 1 < parent.layout.count else { return nil }
+            guard let parent = parentValue, let page = (controller as? PageHost)?.index, page + 1 < parent.layout.count,
+                  renderer?.cachedImage(page: page + 1) != nil else { return nil }
             return host(page + 1)
         }
         func pageViewController(_ pageViewController: UIPageViewController, willTransitionTo pendingViewControllers: [UIViewController]) {
-            warmTask?.cancel(); animating = true
+            guard pageViewController === curl else { return }
+            animating = true
         }
         func pageViewController(_ pageViewController: UIPageViewController, didFinishAnimating finished: Bool, previousViewControllers: [UIViewController], transitionCompleted completed: Bool) {
             guard pageViewController === curl else { return }
