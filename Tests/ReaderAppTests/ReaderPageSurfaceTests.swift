@@ -3,6 +3,36 @@ import Testing
 import TVCore
 
 @MainActor @Suite(.serialized) struct ReaderPageSurfaceTests {
+    @Test func menuRemainsAvailableWhileNextChapterLoads() async throws {
+        let viewport = ReaderViewport(safeAreaSize: CGSize(width: 320, height: 500), safeAreaInsets: .zero)
+        let configuration = ReaderRenderConfiguration(viewport: viewport, script: "", fontName: "",
+            fontSize: 20, lineSpacing: 8, appearance: "day", ink: .black, background: .white,
+            image: nil, opacity: 0, scale: 1)
+        let prepared = try await ReaderPreparedChapter.build(index: 0,
+            content: NovelContent(title: "第一章", paragraphs: ["最后一页"]), configuration: configuration)
+        var menuTaps = 0, loading = false
+        let controller = ReaderPageSurface.Controller()
+        let surface = ReaderPageSurface(layout: prepared.layout, renderer: prepared.renderer, viewport: viewport,
+            style: .slide, offset: 0, background: .white, backgroundImage: nil, backgroundOpacity: 0,
+            animated: true, tapFraction: 0.3, tapsEnabled: true, slideForwardRight: true,
+            moved: { _, _ in }, boundary: { _ in }, center: { menuTaps += 1 }, loadNext: {
+                loading = true
+                try? await Task.sleep(for: .seconds(30))
+                return nil
+            })
+        controller.configure(surface)
+        defer { controller.invalidate() }
+        _ = controller.accessibilityScroll(.next)
+        for _ in 0..<50 {
+            if loading { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(loading)
+        #expect(controller.gestureRecognizerShouldBegin(UITapGestureRecognizer()))
+        #expect(!controller.gestureRecognizerShouldBegin(UIPanGestureRecognizer()))
+        controller.tap(at: 0.5)
+        #expect(menuTaps == 1)
+    }
     @Test(arguments: [ReaderTurnStyle.slide, .cover, .curl])
     func chapterBoundaryContinuesIntoTheSecondPageWithoutRebuilding(style: ReaderTurnStyle) async throws {
         let viewport = ReaderViewport(safeAreaSize: CGSize(width: 320, height: 500), safeAreaInsets: .zero)

@@ -23,6 +23,7 @@ struct ReaderView: View {
     @State private var nextPreparation: Task<ReaderPreparedChapter, Error>?
     @State private var nextPreparationKey: LayoutKey?
     @State private var nextPreparationID = UUID()
+    @State private var nextPreparationIndex: Int?
     @State private var appliedConfiguration: ReaderRenderConfiguration?
     @State private var loadedIndex: Int?
     @State private var loadedRevision: UUID?
@@ -105,9 +106,11 @@ struct ReaderView: View {
                                 guard requestedIndex == index, preparedNext?.configuration == configuration else { return nil }
                                 return preparedNext
                             })
-                            .allowsHitTesting(!isLoading)
                             .overlay {
-                                if isLoading { ProgressView("正在准备章节…").padding().background(.regularMaterial, in: Capsule()) }
+                                if isLoading {
+                                    Color.clear.contentShape(Rectangle()).onTapGesture { controls.toggle() }
+                                    ProgressView("正在准备章节…").padding().background(.regularMaterial, in: Capsule()).allowsHitTesting(false)
+                                }
                             }
                     } else if let failure {
                         ContentUnavailableView {
@@ -159,6 +162,10 @@ struct ReaderView: View {
         .accessibilityAction(named: "阅读设置") { settings = true }
         .accessibilityAction(named: "退出阅读") { dismiss() }
         .task(id: "\(index)-\(revision)") { await load() }
+        .task(id: loadedIndex) {
+            guard let loadedIndex, loadedIndex == index else { return }
+            await NovelBooks.shared.prefetch(book, chapters: chapters, after: loadedIndex, count: 2)
+        }
         .task {
             if !didShowHint { didShowHint = true; notice = "左右点击或滑动翻页，点击中间显示菜单" }
         }
@@ -355,6 +362,12 @@ struct ReaderView: View {
         let requestedRevision = revision
         do {
             let loaded: NovelContent
+            if !refreshChapter, preparedNext?.index != requestedIndex,
+               nextPreparationIndex == requestedIndex, let running = nextPreparation {
+                let prepared = try? await running.value
+                guard !Task.isCancelled, requestedIndex == index, requestedRevision == revision else { return }
+                preparedNext = prepared
+            }
             if !refreshChapter, let preparedNext, preparedNext.index == requestedIndex { loaded = preparedNext.content }
             else { loaded = try await NovelBooks.shared.content(book, chapters: chapters, index: requestedIndex, refresh: refreshChapter) }
             guard !Task.isCancelled, requestedIndex == index, requestedRevision == revision else { return }
@@ -390,7 +403,10 @@ struct ReaderView: View {
                   requestedContent == contentRevision else { return }
             let offset = prepared.offset(position: restorePending ? resumePosition : 0,
                 character: restorePending ? resumeOffset : characterOffset)
-            await prepared.renderer.prepareAsync(around: prepared.layout.page(containing: offset))
+            let targetPage = prepared.layout.page(containing: offset)
+            if prepared.renderer.cachedImage(page: targetPage) == nil {
+                await prepared.renderer.prepareAsync(around: targetPage)
+            }
             guard !Task.isCancelled, requestedIndex == index, requestedRevision == revision,
                   requestedContent == contentRevision else { return }
             characterOffset = offset; page = prepared.layout.page(containing: offset)
@@ -423,7 +439,7 @@ struct ReaderView: View {
                     return try await ReaderPreparedChapter.build(index: next, content: nextContent,
                         configuration: configuration, priority: .utility)
                 }
-                nextPreparationKey = key; nextPreparation = task
+                nextPreparationKey = key; nextPreparationIndex = next; nextPreparation = task
             }
             let prepared = try await task.value
             guard !Task.isCancelled, index == requestedIndex, revision == requestedRevision,

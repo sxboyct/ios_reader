@@ -422,8 +422,10 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             slidePreview?.transform = CGAffineTransform(translationX: x - slideSign * width, y: 0)
         }
         @objc private func tapped(_ gesture: UITapGestureRecognizer) {
+            tap(at: gesture.location(in: view).x / max(1, view.bounds.width))
+        }
+        func tap(at x: CGFloat) {
             guard let parent = parentValue else { return }
-            let x = gesture.location(in: view).x / max(1, view.bounds.width)
             if !parent.tapsEnabled { parent.center() }
             else if x < parent.tapFraction { turn(false) }
             else if x > 1 - parent.tapFraction { turn(true) }
@@ -451,6 +453,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             }
         }
         func gestureRecognizerShouldBegin(_ gesture: UIGestureRecognizer) -> Bool {
+            // Menu taps remain available while a page or the next chapter is prepared.
+            if gesture is UITapGestureRecognizer { return true }
             if awaitingChapter || loadingChapter { return false }
             if gesture === slidePan {
                 guard currentStyle == .slide, !animating, let pan = gesture as? UIPanGestureRecognizer else { return false }

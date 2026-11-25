@@ -154,6 +154,16 @@ public struct NovelSearchHit: Sendable, Identifiable, Hashable {
 public actor NovelBooks {
     public static let shared = NovelBooks()
     private var reading: [String: Task<NovelContent, Error>] = [:]
+    private var readingIDs: [String: UUID] = [:]
+    private var memory: [String: NovelContent] = [:]
+    private var recent: [String] = []
+
+    private func remember(_ content: NovelContent, key: String) -> NovelContent {
+        memory[key] = content
+        recent.removeAll { $0 == key }; recent.append(key)
+        while recent.count > 6 { memory.removeValue(forKey: recent.removeFirst()) }
+        return content
+    }
 
     static func source(_ key: String) async throws -> NovelSource {
         await NovelSources.shared.loaded()
@@ -290,9 +300,16 @@ public actor NovelBooks {
         guard chapters.indices.contains(index) else { throw TVError.unsupported(L10n.text("This chapter is not in the table of contents.")) }
         let chapter = chapters[index]
         let file = Self.contentFile(book, chapter)
-        if !refresh, let data = try? Data(contentsOf: file), let saved = try? JSONDecoder().decode(NovelContent.self, from: data) { return saved }
         let key = file.path
-        if let running = reading[key] { return try await running.value }
+        if !refresh, let saved = memory[key] { return remember(saved, key: key) }
+        if !refresh, let data = try? Data(contentsOf: file), let saved = try? JSONDecoder().decode(NovelContent.self, from: data), !saved.paragraphs.isEmpty {
+            return remember(saved, key: key)
+        }
+        if let running = reading[key] {
+            if !refresh { return remember(try await running.value, key: key) }
+            // A manual reload must not be satisfied by an older speculative request.
+            _ = try? await running.value
+        }
         let next = chapters[(index + 1)...].first { !$0.isVolume }
         let task = Task { () throws -> NovelContent in
             let source = try await Self.source(book.sourceKey)
@@ -303,24 +320,32 @@ public actor NovelBooks {
             if let data = try? JSONEncoder().encode(content) { try? data.write(to: file, options: .atomic) }
             return content
         }
-        reading[key] = task
-        defer { reading[key] = nil }
-        return try await task.value
+        let requestID = UUID()
+        reading[key] = task; readingIDs[key] = requestID
+        defer {
+            if readingIDs[key] == requestID { reading[key] = nil; readingIDs[key] = nil }
+        }
+        return remember(try await task.value, key: key)
     }
 
     /// Reads the next few chapters ahead, quietly, so turning to them is instant.
     public func prefetch(_ book: NovelBook, chapters: [NovelChapter], after index: Int, count: Int = 2) async {
-        var fetched = 0
-        for next in (index + 1)..<min(chapters.count, index + 1 + count * 2) where fetched < count {
-            guard !chapters[next].isVolume else { continue }
-            fetched += 1
-            if hasContent(book, chapters[next]) { continue }
+        for next in Self.prefetchIndices(chapters, after: index, count: count) {
+            guard !Task.isCancelled else { return }
             _ = try? await content(book, chapters: chapters, index: next)
         }
     }
 
+    static func prefetchIndices(_ chapters: [NovelChapter], after index: Int, count: Int = 2) -> [Int] {
+        guard index >= 0, index < chapters.count, count > 0 else { return [] }
+        return Array(chapters.indices.dropFirst(index + 1).lazy.filter { !chapters[$0].isVolume }.prefix(count))
+    }
+
     /// Forgets a book's saved table of contents and chapters.
     public func clear(_ book: NovelBook) {
+        let prefix = Self.folder(book).path + "/"
+        for key in recent where key.hasPrefix(prefix) { memory.removeValue(forKey: key) }
+        recent.removeAll { $0.hasPrefix(prefix) }
         try? FileManager.default.removeItem(at: Self.folder(book))
     }
 }
