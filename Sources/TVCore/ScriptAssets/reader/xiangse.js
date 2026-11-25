@@ -163,7 +163,9 @@ export const xiangse = {
         const action = source.chapterContent, params = { queryInfo: query(book, chapter), stopAt: nextChapter?.url }, paragraphs = [];
         pages(action, params, chapter.url, document => {
             if (nextChapter?.url && params.responseUrl === nextChapter.url) throw Error('分页链接指向下一章，已停止');
-            paragraphs.push(...values(action.content, document, action, params).flatMap(t => t.split(/\r?\n/)).map(t => t.trim()).filter(Boolean));
+            const extracted = values(action.content, document, action, params).flatMap(t => t.split(/\r?\n/)).map(t => t.trim()).filter(Boolean);
+            if (!extracted.length) throw Error('正文第 ' + params.pageIndex + ' 页为空，章节尚未完整，请重试或检查书源');
+            paragraphs.push(...extracted);
         });
         return { title: chapter.title, paragraphs };
     }); }

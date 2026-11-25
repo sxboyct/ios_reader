@@ -210,7 +210,12 @@ struct BookDetailView: View {
         var position: Double = 0
         var offset: Int? = nil
     }
+    private var currentChapter: Int? {
+        guard let saved = library.entry(book) else { return nil }
+        return NovelChapterMatch.index(title: saved.chapterTitle, index: saved.chapterIndex, in: chapters)
+    }
     var body: some View {
+        ScrollViewReader { proxy in
         List {
             Section {
                 BookRow(book: book)
@@ -229,15 +234,36 @@ struct BookDetailView: View {
             Section("目录 · \(chapters.count)") {
                 ForEach(chapters) { chapter in
                     if chapter.isVolume { Text(chapter.title).font(.headline) }
-                    else { Button(chapter.title) { reading = ReadingStart(index: chapter.index) } }
+                    else {
+                        Button { reading = ReadingStart(index: chapter.index) } label: {
+                            HStack {
+                                Text(chapter.title)
+                                Spacer()
+                                if chapter.index == currentChapter {
+                                    Label("正在阅读", systemImage: "book.fill").font(.caption)
+                                }
+                            }
+                            .foregroundStyle(chapter.index == currentChapter ? Color.accentColor : Color.primary)
+                            .fontWeight(chapter.index == currentChapter ? .semibold : .regular)
+                        }
+                        .listRowBackground(chapter.index == currentChapter ? Color.accentColor.opacity(0.12) : Color.clear)
+                        .id(chapter.index)
+                    }
                 }
             }
         }.navigationTitle(book.name).navigationBarTitleDisplayMode(.inline)
         .task { await load() }
         .refreshable { await load(refresh: true) }
+        .onChange(of: chapters.count) { _, _ in
+            if let currentChapter { proxy.scrollTo(currentChapter, anchor: .center) }
+        }
+        .onChange(of: reading?.id) { _, value in
+            if value == nil, let currentChapter { proxy.scrollTo(currentChapter, anchor: .center) }
+        }
         .fullScreenCover(item: $reading) { start in
             ReaderView(book: book, chapters: chapters, start: start.index, position: start.position, characterOffset: start.offset)
                 .environment(library)
+        }
         }
     }
     private func load(refresh: Bool = false) async {

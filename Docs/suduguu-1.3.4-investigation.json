@@ -1,0 +1,121 @@
+{
+  "investigationStatus": "completed_with_findings",
+  "acceptanceStatus": "blocked",
+  "observedAt": "2026-11-25T11:56:44.531Z",
+  "scope": "Read-only investigation of supplied source, repository adapter and live website; only this independent report was written. Filename denotes requested investigation, not a verified app version.",
+  "source": {
+    "attachment": "G:/skill/IOS应用/suduguu.json",
+    "fixture": "G:/skill/IOS应用/YingxiaReader-iOS/Tests/Fixtures/suduguu.source.json",
+    "alias": "suduguu-v1",
+    "byteIdentical": true,
+    "sha256": "E66C1E09EA0AD6D9BE51BA3BDEBDE09453A6492E8E8FAAE49E4B1618782CEFF5"
+  },
+  "verification": {
+    "projectCheck": "PASS",
+    "bundledEngineTests": "PASS (executed by test-xiangse.mjs import)",
+    "xiangseFixtureTests": "PASS",
+    "existingLiveTest": "PASS (curl host / Node VM only)",
+    "initialSandboxLiveAttempt": "BLOCKED: curl exit 7; retried with approved network escalation",
+    "liveReportWriteHandling": "In-memory fs.writeFileSync interception suppressed only Docs/xiangse-live.json; other writes throw. Existing test source and assertions were unchanged. Child-process output was captured in memory for page inspection.",
+    "existingLiveReport": "Docs/xiangse-live.json preserved; historical timestamp 2026-11-23T13:57:37.540Z",
+    "skillSchemaAndEditorChecks": "NOT_RUN: documented tools/scripts/check_xiangse_schema.py and xbs_tool.py missing at skill location; invocation failed before validation",
+    "officialAppCheck": "NOT_RUN",
+    "iOSRuntimeCheck": "NOT_RUN",
+    "acceptanceBlockedReason": "No official-app or iOS/Xcode runtime verification was performed or requested. This is not source-delivery acceptance."
+  },
+  "liveSample": {
+    "keyword": "都市",
+    "book": "杀戮都市！",
+    "bookURL": "https://www.suduguu.com/2418/",
+    "searchResults": 10,
+    "chapter": "第1章 雨夜",
+    "mergedParagraphs": 97,
+    "mergedCharacters": 2222,
+    "characterMetric": "JavaScript paragraphs.join('').length; cleaned text, no separators",
+    "contentPages": [
+      {"url": "https://www.suduguu.com/2418/1245658.html", "httpStatus": 200, "bytes": 6417, "paragraphs": 24, "characters": 576, "next": "https://www.suduguu.com/2418/1245658-2.html"},
+      {"url": "https://www.suduguu.com/2418/1245658-2.html", "httpStatus": 200, "bytes": 6110, "paragraphs": 24, "characters": 452, "next": "https://www.suduguu.com/2418/1245658-3.html"},
+      {"url": "https://www.suduguu.com/2418/1245658-3.html", "httpStatus": 200, "bytes": 6481, "paragraphs": 24, "characters": 577, "next": "https://www.suduguu.com/2418/1245658-4.html"},
+      {"url": "https://www.suduguu.com/2418/1245658-4.html", "httpStatus": 200, "bytes": 6573, "paragraphs": 25, "characters": 617, "nextPage": null, "nextChapter": "https://www.suduguu.com/2418/1245659.html"}
+    ],
+    "pageCountAndLengthSumsMatchEngine": true,
+    "fullParagraphTextComparison": "Pages 2 and 3 have matching direct/full paragraph text lengths. On pages 1 and 4 full paragraph text has one extra space each; follow-up paragraph comparison verified whitespace-only differences, with no child elements in differing paragraphs.",
+    "conclusion": "No missing content page observed in this sampled four-page chapter; cannot infer all chapters are complete."
+  },
+  "findings": [
+    {
+      "id": "catalog_missing_page",
+      "classification": "confirmed_live_source_rule_gap",
+      "details": "Unchanged chapterList has no nextPageUrl. Engine returns 999 chapters, while the live catalog links p-2.html#dir.",
+      "secondPageURL": "https://www.suduguu.com/2418/p-2.html#dir",
+      "secondPageHTTPStatus": 200,
+      "firstPageRange": "第1章 雨夜 — 第999章 上赶着来送",
+      "secondPageRange": "第1000章 难道你是 — 第1534章 到底说了些什么",
+      "secondPageCount": 535,
+      "observedTotal": 1534,
+      "recommendation": "Address catalog pagination and refresh cached catalog after repair. No source or code edits made in this investigation."
+    },
+    {
+      "id": "no_content_deduplication",
+      "classification": "excluded_suspected_cause",
+      "code": "Sources/TVCore/ScriptAssets/reader/xiangse.js:166",
+      "details": "Content uses ordered paragraphs.push, newline splitting, trim and empty-string filtering; no text deduplication. In-memory two-page test preserved both identical paragraphs.",
+      "recommendation": "No change justified for suspected deduplication loss."
+    },
+    {
+      "id": "max_page_is_explicit_failure",
+      "classification": "excluded_suspected_cause",
+      "code": "Sources/TVCore/ScriptAssets/reader/xiangse.js:114",
+      "sourceMaxPage": 10,
+      "adapterHardCap": 50,
+      "details": "Exactly ten pages with no further nextPageUrl returns all ten. A next-page link on page ten returns error: 书源分页超过 maxPage 限制，正文或目录尚未完整. No successful partial result is returned.",
+      "recommendation": "Do not remove the cap or error on the assumption of silent truncation."
+    },
+    {
+      "id": "empty_content_page_accepted",
+      "classification": "confirmed_synthetic_engine_gap_not_observed_in_live_sample",
+      "code": "Sources/TVCore/ScriptAssets/reader/xiangse.js:164",
+      "details": "In-memory original-engine test with nonempty first/third pages and empty second page returns first and third paragraphs successfully. No per-page content validation exists. NovelLibrary checks only aggregate nonempty paragraphs before caching.",
+      "recommendation": "Require meaningful content on each fetched content page; surface page URL and error rather than cache an apparently complete chapter."
+    },
+    {
+      "id": "next_link_absence_means_success",
+      "classification": "static_completeness_blind_spot",
+      "code": "Sources/TVCore/ScriptAssets/reader/xiangse.js:122",
+      "details": "Missing or fragment-only nextPageUrl ends successfully. A rule mismatch can therefore look like the final page. No such mismatch observed in sampled live chapter. Trailing-space next-link label was also tried in memory and still matched in this XPath implementation; it is not evidence of failure.",
+      "recommendation": "Where site evidence permits, compare parsed page indicators/navigation with extracted nextPageUrl and report inconsistent termination."
+    },
+    {
+      "id": "nested_paragraph_text_omitted",
+      "classification": "confirmed_synthetic_source_rule_gap_not_observed_in_live_sample",
+      "details": "The supplied //div[@class='con']//p/text() selects direct text children. Original-engine input <p>前<span>嵌套内容</span>后</p> returns [前, 后], omitting nested text and splitting the paragraph.",
+      "recommendation": "If live failing chapters contain nested markup, update extraction to preserve full paragraph text and verify paragraph boundaries. Do not infer this synthetic case occurred in the sampled live chapter."
+    },
+    {
+      "id": "live_assertions_do_not_prove_completeness",
+      "classification": "test_coverage_gap",
+      "code": "scripts/test-xiangse.mjs:44",
+      "details": "Existing live test checks nonempty content and total characters greater than 100; it does not independently assert expected page count or complete chapter text. Fixture tests cover two-page merge, cycles and next-chapter guards.",
+      "recommendation": "Add meaningful regressions for duplicate preservation, exact-limit success, over-limit error and empty intermediate page rejection when implementing the guard."
+    },
+    {
+      "id": "empty_book_intro",
+      "classification": "observed_live_rule_mismatch",
+      "details": "Existing live test reported empty introduction for the supplied bookDetail.desc rule; separate from content pagination."
+    }
+  ],
+  "commands": [
+    "python scripts/check-project.py",
+    "node --experimental-vm-modules scripts/test-xiangse.mjs",
+    "PowerShell inline module | node --experimental-vm-modules --input-type=module: intercept report write, process.argv.push('--live'), await import('./scripts/test-xiangse.mjs')",
+    "Read-only curl follow-up of observed catalog p-2.html#dir",
+    "Inline Node VM synthetic fixtures using unchanged source and adapter: duplicate paragraphs, ten pages, eleven pages, empty middle page, nested text",
+    "Read-only curl follow-up of content pages 1 and 4 to resolve text-count whitespace differences"
+  ],
+  "limitations": [
+    "Only the first search result and its first chapter were checked live; all-book completeness not established.",
+    "Live responses inspected in memory; no raw HTML files written.",
+    "This directory is not a Git working tree; git status returned not-a-repository.",
+    "Concurrent main-task edits are outside this investigation; code references describe the inspected implementation."
+  ]
+}

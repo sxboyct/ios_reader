@@ -19,6 +19,10 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
     var moved: (Int, Int) -> Void
     var boundary: (Bool) -> Void
     var center: () -> Void
+    var nextLayout: ReaderTextLayout? = nil
+    var nextRenderer: ReaderPageRenderer? = nil
+    var crossedChapter: () -> Void = {}
+    var loadNext: (@MainActor () async -> ReaderPreparedChapter?)? = nil
     func makeUIViewController(context: Context) -> Controller { Controller() }
     func updateUIViewController(_ controller: Controller, context: Context) { controller.configure(self) }
     static func dismantleUIViewController(_ controller: Controller, coordinator: ()) { controller.invalidate() }
@@ -36,11 +40,13 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
     }
 
     @MainActor final class PageHost: UIViewController {
-        let index: Int
-        init(layout: ReaderTextLayout, index: Int, image: UIImage?) {
+        var index: Int
+        let layout: ReaderTextLayout
+        init(layout: ReaderTextLayout, index: Int, image: UIImage?, displayPage: Int? = nil) {
             self.index = index
+            self.layout = layout
             super.init(nibName: nil, bundle: nil)
-            view = PageCanvas(layout: layout, page: index, image: image)
+            view = PageCanvas(layout: layout, page: displayPage ?? index, image: image)
         }
         @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
     }
@@ -70,6 +76,9 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         private var slideTarget: Int?
         private var slideSign: CGFloat = 1
         private var draggingSlide = false
+        private var awaitingChapter = false
+        private var crossingLayout: ReaderTextLayout?
+        private var loadingChapter = false
 
         override func viewDidLoad() {
             super.viewDidLoad()
@@ -91,14 +100,25 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         }
         func configure(_ parent: ReaderPageSurface) {
             loadViewIfNeeded()
+            let nextChanged = parentValue?.nextLayout !== parent.nextLayout || parentValue?.nextRenderer !== parent.nextRenderer
             parentValue = parent; view.backgroundColor = parent.background
+            if awaitingChapter, currentLayout === parent.layout {
+                awaitingChapter = false
+                if let curl, let visible = curl.viewControllers?.first {
+                    curl.dataSource = nil
+                    curl.setViewControllers([visible], direction: .forward, animated: false)
+                    curl.dataSource = self
+                }
+                scheduleWarm()
+            }
             let renderingChanged = currentLayout !== parent.layout || currentViewport != parent.viewport
                 || renderer !== parent.renderer
             if renderingChanged {
                 currentViewport = parent.viewport; renderer = parent.renderer
                 backdrop.image = renderer?.background
             }
-            if renderingChanged || currentStyle != parent.style || currentAnimation != parent.animated {
+            if renderingChanged || currentStyle != parent.style || currentAnimation != parent.animated
+                || (animating && crossingLayout != nil && nextChanged) {
                 generation += 1; animating = false
                 currentLayout = parent.layout; currentStyle = parent.style; currentAnimation = parent.animated
                 currentOffset = min(max(0, parent.offset), max(0, parent.layout.text.length - 1))
@@ -125,6 +145,9 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         }
         private func rebuild() {
             warmTask?.cancel(); turnTask?.cancel()
+            awaitingChapter = false
+            crossingLayout = nil
+            loadingChapter = false
             draggingSlide = false; slideTarget = nil
             slidePreview?.removeFromSuperview(); slidePreview = nil
             canvas?.removeFromSuperview(); canvas = nil
@@ -160,11 +183,18 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             page.center = CGPoint(x: view.bounds.midX, y: view.bounds.midY)
         }
         private func host(_ page: Int) -> PageHost {
+            if let parent = parentValue, page == parent.layout.count,
+               let layout = parent.nextLayout, let image = parent.nextRenderer?.cachedImage(page: 0) {
+                return PageHost(layout: layout, index: page, image: image, displayPage: 0)
+            }
             let host = PageHost(layout: parentValue!.layout, index: page, image: renderer?.cachedImage(page: page))
             if let canvas = host.view as? PageCanvas { finishRendering(canvas, page: page) }
             return host
         }
         private func makeCanvas(_ page: Int, image: UIImage? = nil) -> PageCanvas {
+            if let parent = parentValue, page == parent.layout.count, let layout = parent.nextLayout {
+                return PageCanvas(layout: layout, page: 0, image: image ?? parent.nextRenderer?.cachedImage(page: 0))
+            }
             let canvas = PageCanvas(layout: parentValue!.layout, page: page, image: image ?? renderer?.cachedImage(page: page))
             finishRendering(canvas, page: page)
             return canvas
@@ -186,6 +216,17 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         }
         private func commit(_ page: Int) {
             guard let parent = parentValue else { return }
+            crossingLayout = nil
+            if page == parent.layout.count, let nextLayout = parent.nextLayout, let nextRenderer = parent.nextRenderer {
+                generation += 1; warmTask?.cancel()
+                currentLayout = nextLayout; renderer = nextRenderer; currentViewport = nextRenderer.viewport
+                backdrop.image = nextRenderer.background
+                currentPage = 0; currentOffset = 0; awaitingChapter = true
+                (curl?.viewControllers?.first as? PageHost)?.index = 0
+                parent.crossedChapter()
+                return
+            }
+            guard parent.layout.pageRanges.indices.contains(page) else { rebuild(); return }
             currentPage = page; currentOffset = parent.layout.offset(page: page)
             parent.moved(currentOffset, page)
             scheduleWarm()
@@ -195,12 +236,14 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             let token = generation
             let page = currentPage
             guard let renderer, textView == nil else { return }
-            curl?.view.isUserInteractionEnabled = false
+            let neighborsReady = [page - 1, page + 1].filter { currentLayout?.pageRanges.indices.contains($0) == true }
+                .allSatisfy { renderer.cachedImage(page: $0) != nil }
+            curl?.view.isUserInteractionEnabled = neighborsReady && !loadingChapter
             warmTask = Task { @MainActor [weak self] in
                 guard !Task.isCancelled else { return }
                 await renderer.prepareAsync(around: page)
                 guard let self, !Task.isCancelled, self.generation == token, self.currentPage == page else { return }
-                self.curl?.view.isUserInteractionEnabled = true
+                self.curl?.view.isUserInteractionEnabled = !self.loadingChapter
             }
         }
         func invalidate() {
@@ -209,12 +252,43 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
         private func prepareTurn(_ forward: Bool, target: Int) {
             guard let renderer else { return }
             let token = generation
+            let sourcePage = currentPage
+            let sourceLayout = currentLayout
             animating = true
+            loadingChapter = true; curl?.view.isUserInteractionEnabled = false
             turnTask = Task { @MainActor [weak self] in
                 let rendered = await renderer.preparePage(target)
-                guard let self, !Task.isCancelled, self.generation == token else { return }
-                self.animating = false; self.turnTask = nil
+                guard let self, !Task.isCancelled, self.generation == token,
+                      self.currentPage == sourcePage, self.currentLayout === sourceLayout else { return }
+                self.animating = false; self.turnTask = nil; self.loadingChapter = false
+                self.curl?.view.isUserInteractionEnabled = true
                 if let rendered { self.turn(forward, preparedImage: rendered.image) }
+            }
+        }
+        private func prepareChapter() {
+            guard let parent = parentValue, let loadNext = parent.loadNext else {
+                parentValue?.boundary(true); return
+            }
+            let token = generation
+            let sourcePage = currentPage
+            let sourceLayout = currentLayout
+            animating = true
+            loadingChapter = true; curl?.view.isUserInteractionEnabled = false
+            let indicator = UIActivityIndicatorView(style: .medium)
+            indicator.center = CGPoint(x: view.bounds.midX, y: view.bounds.midY)
+            view.addSubview(indicator); indicator.startAnimating()
+            turnTask = Task { @MainActor [weak self] in
+                defer { indicator.removeFromSuperview() }
+                let next = await loadNext()
+                guard let self, !Task.isCancelled, self.generation == token,
+                      self.currentPage == sourcePage, self.currentLayout === sourceLayout else { return }
+                self.animating = false; self.turnTask = nil; self.loadingChapter = false
+                self.curl?.view.isUserInteractionEnabled = true
+                guard let next else { self.parentValue?.boundary(true); return }
+                var updated = self.parentValue ?? parent
+                updated.nextLayout = next.layout; updated.nextRenderer = next.renderer
+                self.configure(updated)
+                self.turn(true)
             }
         }
         private func restoreScroll(_ text: UITextView) {
@@ -228,7 +302,7 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             restoringScroll = false
         }
         private func turn(_ forward: Bool, preparedImage: UIImage? = nil) {
-            guard let parent = parentValue, !animating else { return }
+            guard let parent = parentValue, !animating, !awaitingChapter else { return }
             if let textView {
                 let maxY = max(0, textView.contentSize.height - textView.bounds.height)
                 let y = textView.contentOffset.y
@@ -237,14 +311,19 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 return
             }
             let target = currentPage + (forward ? 1 : -1)
-            guard target >= 0 && target < parent.layout.count else { parent.boundary(forward); return }
-            guard let targetImage = preparedImage ?? renderer?.cachedImage(page: target) else {
+            if forward, target == parent.layout.count, !nextChapterReady(target), parent.loadNext != nil {
+                prepareChapter(); return
+            }
+            guard target >= 0 && (target < parent.layout.count || nextChapterReady(target)) else { parent.boundary(forward); return }
+            guard let targetImage = preparedImage ?? pageImage(target) else {
                 prepareTurn(forward, target: target); return
             }
             let token = generation
+            crossingLayout = target == parent.layout.count ? parent.nextLayout : nil
             if let curl {
                 animating = true
-                let targetHost = PageHost(layout: parent.layout, index: target, image: targetImage)
+                let targetHost = PageHost(layout: target == parent.layout.count ? parent.nextLayout! : parent.layout,
+                    index: target, image: targetImage, displayPage: target == parent.layout.count ? 0 : target)
                 curl.setViewControllers([targetHost], direction: forward ? .forward : .reverse, animated: parent.animated) { [weak self] finished in
                     guard let self, self.generation == token else { return }
                     self.animating = false
@@ -276,10 +355,13 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             }
         }
         @objc private func draggedSlide(_ gesture: UIPanGestureRecognizer) {
-            guard let parent = parentValue, parent.style == .slide, let old = canvas else { return }
+            slideChanged(translation: gesture.translation(in: view).x, velocity: gesture.velocity(in: view).x, state: gesture.state)
+        }
+        func slideChanged(translation: CGFloat, velocity: CGFloat, state: UIGestureRecognizer.State) {
+            guard let parent = parentValue, parent.style == .slide, !awaitingChapter, let old = canvas else { return }
             let width = max(1, view.bounds.width)
-            let delta = max(-width, min(width, gesture.translation(in: view).x))
-            switch gesture.state {
+            let delta = max(-width, min(width, translation))
+            switch state {
             case .began:
                 guard !animating else { return }
                 draggingSlide = true; animating = true
@@ -292,8 +374,8 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                 draggingSlide = false
                 updateSlide(delta: delta, width: width, old: old, parent: parent)
                 let forward = ReaderSlideTurn.committedForward(translation: Double(delta), width: Double(width),
-                    forwardRight: parent.slideForwardRight, velocity: Double(gesture.velocity(in: view).x),
-                    cancelled: gesture.state != .ended)
+                    forwardRight: parent.slideForwardRight, velocity: Double(velocity),
+                    cancelled: state != .ended)
                 let preview = slidePreview
                 let target = slideTarget
                 let token = generation
@@ -310,10 +392,11 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
                         old.removeFromSuperview(); preview.transform = .identity
                         self.canvas = preview; self.commit(target)
                     } else {
+                        self.crossingLayout = nil
                         old.transform = .identity; preview?.removeFromSuperview()
                         self.scheduleWarm()
                         if let forward {
-                            if let target, target >= 0, target < parent.layout.count { self.turn(forward) }
+                            if let target, target >= 0, target <= parent.layout.count { self.turn(forward) }
                             else { self.parentValue?.boundary(forward) }
                         }
                     }
@@ -325,9 +408,10 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             slideSign = delta < 0 ? -1 : 1
             let forward = (slideSign > 0) == parent.slideForwardRight
             let target = currentPage + (forward ? 1 : -1)
+            crossingLayout = target == parent.layout.count ? parent.nextLayout : nil
             if slideTarget != target || slidePreview == nil {
                 slidePreview?.removeFromSuperview(); slidePreview = nil; slideTarget = target
-                if target >= 0 && target < parent.layout.count, renderer?.cachedImage(page: target) != nil {
+                if target >= 0 && (target < parent.layout.count || nextChapterReady(target)), pageImage(target) != nil {
                     let preview = makeCanvas(target)
                     place(preview); view.addSubview(preview); slidePreview = preview
                 }
@@ -361,11 +445,13 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             if gesture.state == .ended {
                 let delta = gesture.translation(in: view)
                 guard abs(delta.x) > 50, abs(delta.x) > abs(delta.y) else { return }
-                if swipeStartPage == parent.layout.count - 1 && delta.x < 0 { parent.boundary(true) }
+                if swipeStartPage == parent.layout.count - 1 && delta.x < 0,
+                   !nextChapterReady(parent.layout.count), !awaitingChapter { turn(true) }
                 if swipeStartPage == 0 && delta.x > 0 { parent.boundary(false) }
             }
         }
         func gestureRecognizerShouldBegin(_ gesture: UIGestureRecognizer) -> Bool {
+            if awaitingChapter || loadingChapter { return false }
             if gesture === slidePan {
                 guard currentStyle == .slide, !animating, let pan = gesture as? UIPanGestureRecognizer else { return false }
                 let velocity = pan.velocity(in: view)
@@ -380,24 +466,44 @@ struct ReaderPageSurface: UIViewControllerRepresentable {
             return gesture is UIPanGestureRecognizer || other is UIPanGestureRecognizer
         }
         func pageViewController(_ pageViewController: UIPageViewController, viewControllerBefore controller: UIViewController) -> UIViewController? {
-            guard let page = (controller as? PageHost)?.index, page > 0,
+            guard !awaitingChapter, !loadingChapter, let host = controller as? PageHost else { return nil }
+            if let parent = parentValue, host.layout === parent.nextLayout, host.index == parent.layout.count {
+                return self.host(parent.layout.count - 1)
+            }
+            guard host.layout === currentLayout else { return nil }
+            let page = host.index
+            guard page > 0,
                   renderer?.cachedImage(page: page - 1) != nil else { return nil }
-            return host(page - 1)
+            return self.host(page - 1)
         }
         func pageViewController(_ pageViewController: UIPageViewController, viewControllerAfter controller: UIViewController) -> UIViewController? {
-            guard let parent = parentValue, let page = (controller as? PageHost)?.index, page + 1 < parent.layout.count,
-                  renderer?.cachedImage(page: page + 1) != nil else { return nil }
-            return host(page + 1)
+            guard let parent = parentValue, !awaitingChapter, !loadingChapter, let host = controller as? PageHost,
+                  host.layout === currentLayout else { return nil }
+            let page = host.index
+            guard
+                  page + 1 < parent.layout.count || nextChapterReady(page + 1),
+                  pageImage(page + 1) != nil else { return nil }
+            return self.host(page + 1)
+        }
+        private func nextChapterReady(_ page: Int) -> Bool {
+            guard let parent = parentValue, page == parent.layout.count else { return false }
+            return parent.nextLayout != nil && parent.nextRenderer?.cachedImage(page: 0) != nil
+        }
+        private func pageImage(_ page: Int) -> UIImage? {
+            if let parent = parentValue, page == parent.layout.count { return parent.nextRenderer?.cachedImage(page: 0) }
+            return renderer?.cachedImage(page: page)
         }
         func pageViewController(_ pageViewController: UIPageViewController, willTransitionTo pendingViewControllers: [UIViewController]) {
             guard pageViewController === curl else { return }
+            let pending = pendingViewControllers.first as? PageHost
+            crossingLayout = pending?.layout !== currentLayout ? pending?.layout : nil
             animating = true
         }
         func pageViewController(_ pageViewController: UIPageViewController, didFinishAnimating finished: Bool, previousViewControllers: [UIViewController], transitionCompleted completed: Bool) {
             guard pageViewController === curl else { return }
             animating = false
             if completed, let page = (pageViewController.viewControllers?.first as? PageHost)?.index { commit(page) }
-            else { scheduleWarm() }
+            else { crossingLayout = nil; scheduleWarm() }
         }
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             guard !restoringScroll, !pendingScrollRestore, let textView, let parent = parentValue, textView.textStorage.length > 0 else { return }

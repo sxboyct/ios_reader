@@ -1,5 +1,17 @@
 # Validation record
 
+## 1.3.4 / build 9 — 2026-11-25
+
+- Forward chapter boundaries now provide the prepared next chapter's opening image to slide/cover animations and the native curl data source. Only a completed transition adopts the chapter; cancellation retains the old position. Adoption keeps the controller and prepared layout instead of restarting load/reflow. The next chapter is prepared through a shared task, and a boundary request can await it before animating.
+- Frame/style/configuration changes invalidate obsolete transitions. Changes to a next-chapter preview cancel a transition only when it actually targets that preview; ordinary first-to-second-page turns continue when background preloading completes. Page commits reject out-of-range indices.
+- Render configuration compares the stable theme/dark-mode identity, not newly bridged UIColor objects. Already applied configurations do not reflow the current chapter. This removes a potential source of delayed resets; on-device frame timing remains unmeasured.
+- Reading and book-detail catalogs position the saved/current chapter in view and highlight it with a reading label. Added explicit current-chapter reload. Xiangse rejects an empty page anywhere in the content chain; existing cached files are not erased automatically.
+- Native regression tests now drive slide drag/change/end/cancel handlers across a chapter boundary and into page two, introduce newly prepared neighboring content during a drag, retain the curl controller, and exercise delayed next-chapter preparation. These run in Actions; they are not executed locally on Windows.
+- Local structure/resource, Legado/Xiangse fixtures and Swift syntax checks are available. Syntax parsing is not type checking. No new IPA build or physical-device smoothness result is claimed.
+- Source investigation is recorded separately in `suduguu-1.3.4-investigation.json`. The unchanged attachment matches the existing fixture. A sampled four-webpage chapter merged exactly; the supplied source has no catalog continuation rule, so catalogs over the first page can remain incomplete. This source-rule limitation is separate from per-screen text pagination and from highlighting the current entry.
+- Follow-up for the user's book is in `suduguu-chapter-187.json`, reproducible with `scripts/inspect-suduguu.mjs`. The website names its unique matching result 公考捡漏：从女友抛弃到权利巅峰 (`/3560/`), whereas the user wrote 权力. Chapters 186–188 each span four webpages. Chapter 187 returned 43 paragraphs / 2068 UTF-16 characters with exact ordered merge and no nested-text loss; adjacent chapter links matched the catalog. This is a network/parser check, not iOS rendering proof. The slide/curl/cover boundary test uses synthetic text with the same 43 paragraph lengths and the system font; no chapter prose is bundled.
+
+
 ## 1.3.3 / build 8 — 2026-11-25
 
 - Supplied diagnostics contain no compiler `error:` lines. The simulator ran 40 tests; one rendering test produced 16 issues and stopped the workflow before device packaging. Fifteen issues compare raster pixels; another compares the rounded 273 × 446 image with a 272.5 × 445.5 point viewport at scale 1.

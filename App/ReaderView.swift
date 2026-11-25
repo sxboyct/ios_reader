@@ -20,10 +20,14 @@ struct ReaderView: View {
     @State private var layout: ReaderTextLayout?
     @State private var renderer: ReaderPageRenderer?
     @State private var preparedNext: ReaderPreparedChapter?
+    @State private var nextPreparation: Task<ReaderPreparedChapter, Error>?
+    @State private var nextPreparationKey: LayoutKey?
+    @State private var nextPreparationID = UUID()
     @State private var appliedConfiguration: ReaderRenderConfiguration?
     @State private var loadedIndex: Int?
     @State private var loadedRevision: UUID?
     @State private var isLoading = true
+    @State private var refreshChapter = false
     @State private var characterOffset = 0
     @State private var page = 0
     @State private var restorePending = true
@@ -75,7 +79,8 @@ struct ReaderView: View {
                     safeAreaInsets: UIEdgeInsets(top: safeArea.top, left: safeArea.leading,
                         bottom: safeArea.bottom, right: safeArea.trailing))
                 let configuration = ReaderRenderConfiguration(viewport: viewport, script: script, fontName: fontName,
-                    fontSize: fontSize, lineSpacing: lineSpacing, ink: UIColor(ink), background: UIColor(background),
+                    fontSize: fontSize, lineSpacing: lineSpacing, appearance: "\(theme)-\(dark)",
+                    ink: UIColor(ink), background: UIColor(background),
                     image: backgrounds.image, opacity: backgroundOpacity, scale: displayScale)
                 ZStack(alignment: .topLeading) {
                 Group {
@@ -90,7 +95,16 @@ struct ReaderView: View {
                             }, boundary: { [chapter = index, identity = layout] forward in
                                 guard !isLoading, loadedIndex == chapter, self.layout === identity else { return }
                                 boundary(forward)
-                            }, center: { controls.toggle() })
+                            }, center: { controls.toggle() },
+                            nextLayout: preparedNext?.configuration == configuration ? preparedNext?.layout : nil,
+                            nextRenderer: preparedNext?.configuration == configuration ? preparedNext?.renderer : nil,
+                            crossedChapter: { adoptNext() },
+                            loadNext: neighbor(1) == nil ? nil : {
+                                let requestedIndex = index
+                                await prepareNext(configuration: configuration)
+                                guard requestedIndex == index, preparedNext?.configuration == configuration else { return nil }
+                                return preparedNext
+                            })
                             .allowsHitTesting(!isLoading)
                             .overlay {
                                 if isLoading { ProgressView("正在准备章节…").padding().background(.regularMaterial, in: Capsule()) }
@@ -153,7 +167,7 @@ struct ReaderView: View {
             try? await Task.sleep(for: .seconds(4))
             if !Task.isCancelled { notice = nil }
         }
-        .onDisappear { saveTask?.cancel(); record(); library.flushShelf() }
+        .onDisappear { saveTask?.cancel(); nextPreparation?.cancel(); record(); library.flushShelf() }
         .onChange(of: scenePhase) { _, value in
             if value != .active { saveTask?.cancel(); record(); library.flushShelf() }
         }
@@ -172,8 +186,24 @@ struct ReaderView: View {
         } message: { Text(backgrounds.error ?? "") }
         .sheet(isPresented: $contents) {
             NavigationStack {
-                List(chapters) { chapter in
-                    Button(chapter.title) { jump(chapter.index); contents = false; controls = false }.disabled(chapter.isVolume)
+                ScrollViewReader { proxy in
+                    List(chapters) { chapter in
+                        Button { jump(chapter.index); contents = false; controls = false } label: {
+                            HStack {
+                                Text(chapter.title)
+                                Spacer()
+                                if chapter.index == index {
+                                    Label("正在阅读", systemImage: "book.fill").font(.caption)
+                                }
+                            }
+                            .foregroundStyle(chapter.index == index ? Color.accentColor : Color.primary)
+                            .fontWeight(chapter.index == index ? .semibold : .regular)
+                        }
+                        .disabled(chapter.isVolume)
+                        .listRowBackground(chapter.index == index ? Color.accentColor.opacity(0.12) : Color.clear)
+                        .id(chapter.index)
+                    }
+                    .onAppear { proxy.scrollTo(index, anchor: .center) }
                 }.navigationTitle("目录").toolbar { Button("关闭") { contents = false } }
             }
         }
@@ -185,6 +215,14 @@ struct ReaderView: View {
                 Button { record(); dismiss() } label: { Image(systemName: "chevron.left") }.accessibilityLabel("退出阅读")
                 Text(book.name).font(.headline).lineLimit(1)
                 Spacer(minLength: 0)
+                Menu {
+                    Button("重新加载本章") {
+                        refreshChapter = true
+                        jump(index, position: position, offset: characterOffset)
+                        controls = false
+                    }.disabled(isLoading)
+                } label: { Image(systemName: "arrow.clockwise") }
+                .accessibilityLabel("重新加载本章")
                 Button { controls = false } label: { Image(systemName: "xmark") }.accessibilityLabel("隐藏菜单")
             }.padding().background(.regularMaterial)
             Spacer()
@@ -310,15 +348,17 @@ struct ReaderView: View {
         }
     }
     private func load() async {
+        if loadedIndex == index, loadedRevision == revision, !restorePending { return }
         failure = nil; restorePending = true; isLoading = true
         loadedIndex = nil; loadedRevision = nil
         let requestedIndex = index
         let requestedRevision = revision
         do {
             let loaded: NovelContent
-            if let preparedNext, preparedNext.index == requestedIndex { loaded = preparedNext.content }
-            else { loaded = try await NovelBooks.shared.content(book, chapters: chapters, index: requestedIndex) }
+            if !refreshChapter, let preparedNext, preparedNext.index == requestedIndex { loaded = preparedNext.content }
+            else { loaded = try await NovelBooks.shared.content(book, chapters: chapters, index: requestedIndex, refresh: refreshChapter) }
             guard !Task.isCancelled, requestedIndex == index, requestedRevision == revision else { return }
+            refreshChapter = false
             content = loaded; loadedIndex = requestedIndex; loadedRevision = requestedRevision; contentRevision = UUID()
         } catch {
             if !Task.isCancelled, requestedIndex == index, requestedRevision == revision {
@@ -328,6 +368,10 @@ struct ReaderView: View {
     }
     private func reflow(configuration: ReaderRenderConfiguration) async {
         guard let content, loadedIndex == index, loadedRevision == revision else { return }
+        if !restorePending, appliedConfiguration == configuration, layout != nil {
+            await prepareNext(configuration: configuration)
+            return
+        }
         isLoading = true
         _ = ReaderFonts.shared
         let requestedIndex = index
@@ -353,18 +397,53 @@ struct ReaderView: View {
             layout = prepared.layout; renderer = prepared.renderer; appliedConfiguration = configuration
             restorePending = false; isLoading = false; preparedNext = nil
             record()
-            guard let next = neighbor(1) else { preparedNext = nil; return }
-            let nextContent = try await NovelBooks.shared.content(book, chapters: chapters, index: next)
-            guard !Task.isCancelled, requestedIndex == index, requestedRevision == revision else { return }
-            let nextChapter = try await ReaderPreparedChapter.build(index: next, content: nextContent,
-                configuration: configuration, priority: .utility)
-            guard !Task.isCancelled, requestedIndex == index, requestedRevision == revision else { return }
-            preparedNext = nextChapter
+            await prepareNext(configuration: configuration)
         } catch {
             if !Task.isCancelled, requestedIndex == index, requestedRevision == revision, isLoading {
                 failure = error.localizedDescription; layout = nil; renderer = nil; isLoading = false
             }
         }
+    }
+    private func prepareNext(configuration: ReaderRenderConfiguration) async {
+        guard let next = neighbor(1) else { preparedNext = nil; return }
+        if preparedNext?.index == next, preparedNext?.configuration == configuration { return }
+        let requestedIndex = index
+        let requestedRevision = revision
+        let key = LayoutKey(contentRevision: contentRevision, revision: revision, configuration: configuration)
+        var taskID = nextPreparationID
+        do {
+            let task: Task<ReaderPreparedChapter, Error>
+            if nextPreparationKey == key, let running = nextPreparation { task = running }
+            else {
+                nextPreparation?.cancel()
+                taskID = UUID(); nextPreparationID = taskID
+                task = Task {
+                    let nextContent = try await NovelBooks.shared.content(book, chapters: chapters, index: next)
+                    try Task.checkCancellation()
+                    return try await ReaderPreparedChapter.build(index: next, content: nextContent,
+                        configuration: configuration, priority: .utility)
+                }
+                nextPreparationKey = key; nextPreparation = task
+            }
+            let prepared = try await task.value
+            guard !Task.isCancelled, index == requestedIndex, revision == requestedRevision,
+                  contentRevision == key.contentRevision, nextPreparationID == taskID else { return }
+            preparedNext = prepared
+        } catch {
+            if nextPreparationID == taskID { nextPreparation = nil; nextPreparationKey = nil }
+        }
+    }
+    private func adoptNext() {
+        guard let prepared = preparedNext, prepared.index == neighbor(1),
+              prepared.configuration == appliedConfiguration else { return }
+        saveTask?.cancel(); record()
+        index = prepared.index; content = prepared.content
+        layout = prepared.layout; renderer = prepared.renderer
+        characterOffset = 0; page = 0; resumePosition = 0; resumeOffset = 0
+        revision = UUID(); contentRevision = UUID()
+        loadedIndex = index; loadedRevision = revision
+        restorePending = false; isLoading = false; preparedNext = nil; failure = nil
+        record()
     }
     private func moved(_ offset: Int, _ page: Int) {
         characterOffset = offset; self.page = page

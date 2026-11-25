@@ -3,6 +3,116 @@ import Testing
 import TVCore
 
 @MainActor @Suite(.serialized) struct ReaderPageSurfaceTests {
+    @Test(arguments: [ReaderTurnStyle.slide, .cover, .curl])
+    func chapterBoundaryContinuesIntoTheSecondPageWithoutRebuilding(style: ReaderTurnStyle) async throws {
+        let viewport = ReaderViewport(safeAreaSize: CGSize(width: 320, height: 500), safeAreaInsets: .zero)
+        let configuration = ReaderRenderConfiguration(viewport: viewport, script: "", fontName: "",
+            fontSize: 20, lineSpacing: 8, appearance: "day", ink: .black, background: .white,
+            image: nil, opacity: 0, scale: 1)
+        let first = try await ReaderPreparedChapter.build(index: 0,
+            content: NovelContent(title: "第一章", paragraphs: ["上一章最后一句"]), configuration: configuration)
+        let lengths = [28,43,18,79,36,51,57,44,16,15,120,64,18,58,7,35,47,13,65,46,53,18,
+            54,70,43,83,48,55,39,17,61,75,40,43,37,70,71,56,61,52,61,62,39]
+        let second = try await ReaderPreparedChapter.build(index: 1,
+            content: NovelContent(title: "第187章 分页回归", paragraphs: lengths.map { String(repeating: "文", count: $0) }),
+            configuration: configuration)
+        var crossed = 0
+        var moved: [Int] = []
+        var fallback = 0
+        let controller = ReaderPageSurface.Controller()
+        var surface = ReaderPageSurface(layout: first.layout, renderer: first.renderer, viewport: viewport,
+            style: style, offset: 0, background: .white, backgroundImage: nil, backgroundOpacity: 0,
+            animated: true, tapFraction: 0.3, tapsEnabled: true, slideForwardRight: true,
+            moved: { _, page in moved.append(page) }, boundary: { _ in fallback += 1 }, center: {},
+            nextLayout: second.layout, nextRenderer: second.renderer, crossedChapter: { crossed += 1 })
+        controller.configure(surface)
+        let window = UIWindow(frame: CGRect(origin: .zero, size: viewport.size))
+        window.rootViewController = controller; window.makeKeyAndVisible()
+        controller.view.layoutIfNeeded()
+        defer { controller.invalidate(); window.isHidden = true }
+        let originalPager = controller.children.first
+        if style == .slide {
+            controller.slideChanged(translation: 12, velocity: 80, state: .began)
+            controller.slideChanged(translation: 70, velocity: 80, state: .changed)
+            controller.slideChanged(translation: 70, velocity: 80, state: .cancelled)
+            try await Task.sleep(for: .milliseconds(300))
+            #expect(crossed == 0)
+        }
+        if style == .slide {
+            controller.slideChanged(translation: 12, velocity: 100, state: .began)
+            controller.slideChanged(translation: 65, velocity: 100, state: .changed)
+            controller.slideChanged(translation: 65, velocity: 100, state: .ended)
+        } else { _ = controller.accessibilityScroll(.next) }
+        for _ in 0..<100 {
+            if crossed == 1 { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(crossed == 1)
+        #expect(fallback == 0)
+        surface = ReaderPageSurface(layout: second.layout, renderer: second.renderer, viewport: viewport,
+            style: style, offset: 0, background: .white, backgroundImage: nil, backgroundOpacity: 0,
+            animated: true, tapFraction: 0.3, tapsEnabled: true, slideForwardRight: true,
+            moved: { _, page in moved.append(page) }, boundary: { _ in fallback += 1 }, center: {})
+        controller.configure(surface)
+        if style == .curl { #expect(controller.children.first === originalPager) }
+        if style == .slide {
+            controller.slideChanged(translation: 12, velocity: 100, state: .began)
+            controller.slideChanged(translation: 65, velocity: 100, state: .changed)
+            surface.nextLayout = first.layout; surface.nextRenderer = first.renderer
+            controller.configure(surface)
+            controller.slideChanged(translation: 65, velocity: 100, state: .ended)
+        } else { _ = controller.accessibilityScroll(.next) }
+        for _ in 0..<100 {
+            if moved.last == 1 { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(moved == [1])
+        let visible = (controller.children.first as? UIPageViewController)?.viewControllers?.first?.view
+            ?? controller.view.subviews.last
+        let canvas = try #require(visible as? ReaderPageSurface.PageCanvas)
+        #expect(canvas.accessibilityLabel == second.layout.text.attributedSubstring(from: second.layout.pageRanges[1]).string)
+        #expect(canvas.image != nil)
+        #expect(second.layout.isComplete)
+        let reconstructed = second.layout.pageRanges.map { second.layout.text.attributedSubstring(from: $0).string }.joined()
+        #expect(reconstructed == second.layout.text.string)
+    }
+
+    @Test func unavailableChapterIsPreparedBeforeTheCoverAnimation() async throws {
+        let viewport = ReaderViewport(safeAreaSize: CGSize(width: 320, height: 500), safeAreaInsets: .zero)
+        let configuration = ReaderRenderConfiguration(viewport: viewport, script: "", fontName: "",
+            fontSize: 20, lineSpacing: 8, appearance: "day", ink: .black, background: .white,
+            image: nil, opacity: 0, scale: 1)
+        let first = try await ReaderPreparedChapter.build(index: 0,
+            content: NovelContent(title: "第一章", paragraphs: ["上一章结尾"]), configuration: configuration)
+        let second = try await ReaderPreparedChapter.build(index: 1,
+            content: NovelContent(title: "第二章", paragraphs: ["下一章开头"]), configuration: configuration)
+        var crossed = 0
+        var fallback = 0
+        let controller = ReaderPageSurface.Controller()
+        controller.configure(ReaderPageSurface(layout: first.layout, renderer: first.renderer, viewport: viewport,
+            style: .cover, offset: 0, background: .white, backgroundImage: nil, backgroundOpacity: 0,
+            animated: true, tapFraction: 0.3, tapsEnabled: true, slideForwardRight: true,
+            moved: { _, _ in }, boundary: { _ in fallback += 1 }, center: {},
+            crossedChapter: { crossed += 1 }, loadNext: {
+                try? await Task.sleep(for: .milliseconds(80))
+                return second
+            }))
+        let window = UIWindow(frame: CGRect(origin: .zero, size: viewport.size))
+        window.rootViewController = controller; window.makeKeyAndVisible()
+        controller.view.layoutIfNeeded()
+        defer { controller.invalidate(); window.isHidden = true }
+        _ = controller.accessibilityScroll(.next)
+        #expect(crossed == 0)
+        for _ in 0..<100 {
+            if crossed == 1 { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(crossed == 1)
+        #expect(fallback == 0)
+        let canvas = try #require(controller.view.subviews.compactMap { $0 as? ReaderPageSurface.PageCanvas }.last)
+        #expect(canvas.accessibilityLabel == second.layout.text.string)
+    }
+
     @Test func scrollingRestoresTheEndOfALongChapter() async throws {
         let viewport = ReaderViewport(safeAreaSize: CGSize(width: 320, height: 500), safeAreaInsets: .zero)
         let layout = ReaderTextLayout(content: NovelContent(title: "滚动测试", paragraphs: [

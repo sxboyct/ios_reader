@@ -57,6 +57,12 @@ if (live) {
     console.log(JSON.stringify(report, null, 2));
 } else {
     assert.deepEqual(content.paragraphs, ['第一页甲','第一页乙','第二页丙']);
+    pages['https://www.suduguu.com/book/1_2.html'] = '<div class="con"></div><div class="prenext"><a href="1_3.html">下一页</a></div>';
+    pages['https://www.suduguu.com/book/1_3.html'] = '<div class="con"><p>最后一页</p></div>';
+    assert.match(engine.content(book, toc[0], toc[1]).error, /第 2 页为空/);
+    pages['https://www.suduguu.com/book/1_2.html'] = '<div class="con"><p>第一页甲</p><p>重复正文应保留</p></div><div class="prenext"><a href="1_3.html">下一页</a></div>';
+    assert.deepEqual(unwrap(engine.content(book, toc[0], toc[1])).paragraphs,
+        ['第一页甲', '第一页乙', '第一页甲', '重复正文应保留', '最后一页']);
     pages['https://www.suduguu.com/book/1_2.html'] = '<div class="con"><p>循环</p></div><div class="prenext"><a href="1.html">下一页</a></div>';
     assert.match(engine.content(book, toc[0], toc[1]).error, /循环/);
     pages['https://www.suduguu.com/book/1_2.html'] = '<div class="con"><p>跨章</p></div><div class="prenext"><a href="2.html">下一页</a></div>';

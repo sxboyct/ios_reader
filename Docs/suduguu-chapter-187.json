@@ -1,0 +1,2414 @@
+{
+  "startedAt": "2026-11-25T12:05:58.253Z",
+  "status": "sample_network_content_checks_pass",
+  "runtime": "Node VM / curl; no official-app or iOS layout verification",
+  "userFontSetting": "system",
+  "keyword": "公考捡漏",
+  "requestedTitle": "公考捡漏：从女友抛弃到权利巅峰",
+  "requestedChapters": [
+    186,
+    187,
+    188
+  ],
+  "source": {
+    "sha256": "e66c1e09ea0ad6d9be51ba3bdebde09453a6492e8e8faae49e4b1618782ceff5",
+    "fixtureSHA256": "e66c1e09ea0ad6d9be51ba3bdebde09453a6492e8e8faae49e4b1618782ceff5"
+  },
+  "adapterSHA256": "dfc7294aea7b968f513792e83c5ede57e1d19a84a24884a736d459438cddb50f",
+  "rules": {
+    "maxPage": 10
+  },
+  "textStorage": "Memory only; report contains statistics, URLs and fingerprints, no chapter text",
+  "metrics": "Lengths are UTF-16 unless codePoints is specified; SHA-256 over UTF-8; arrays hashed via JSON.stringify",
+  "chapters": [
+    {
+      "number": 186,
+      "url": "https://www.suduguu.com/3560/2308764.html",
+      "titleSHA256": "d07feef6b2df815930920acbbc2741d376f01e278505f1d1b8de2e4519cbe792",
+      "nextChapterURL": "https://www.suduguu.com/3560/2308765.html",
+      "status": "completed",
+      "error": null,
+      "pageCount": 4,
+      "pages": [
+        {
+          "url": "https://www.suduguu.com/3560/2308764.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308764.html",
+          "httpStatus": 200,
+          "responseBytes": 6219,
+          "responseSHA256": "9c2a64dc3bda764ac5d93fb1d8b1bbf75d825640108df72568ef2adbd0b6c976",
+          "titleSHA256": "d946ec720a62db4139a729ab598455de8d9e9d3b4d352fb65a8aa3474daf2e02",
+          "paragraphElements": 11,
+          "extractedParagraphs": 11,
+          "extractedText": {
+            "utf16": 491,
+            "codePoints": 491,
+            "sha256": "c474b20648703644a0cad86da8d17eca7dd1488934ef885b5b7278f2afd1acfc"
+          },
+          "paragraphArraySHA256": "0b80848ced2dec7cc68004e9f5b68da5de2c3124bff0c5b15fd1fc2f7c5ccdda",
+          "fullParagraphText": {
+            "utf16": 491,
+            "codePoints": 491,
+            "sha256": "c474b20648703644a0cad86da8d17eca7dd1488934ef885b5b7278f2afd1acfc"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": "https://www.suduguu.com/3560/2308764-2.html",
+          "visibleNextPageURL": "https://www.suduguu.com/3560/2308764-2.html",
+          "previousPageURL": null,
+          "nextChapterURL": null,
+          "previousChapterURL": "https://www.suduguu.com/3560/2308763.html",
+          "firstParagraph": {
+            "utf16": 35,
+            "codePoints": 35,
+            "sha256": "3fd787454d24f9aa3f1fe531b4a8b49bd259820b81df4a2335902596c1695ad0"
+          },
+          "lastParagraph": {
+            "utf16": 42,
+            "codePoints": 42,
+            "sha256": "656227f9a4a9966a1575f5e5704cb17e93e9680355fc6aab0a41c292b5cb0372"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "55363e64bc2e3e9c493c98bb2dbad037bc1d954a1a4d4193f13d0d903b5460fa"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "bae60edadc2c58d97d28942a40f89e5badffc2e23e3e746b94fd10f404a74660"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 35,
+              "codePoints": 35,
+              "sha256": "3fd787454d24f9aa3f1fe531b4a8b49bd259820b81df4a2335902596c1695ad0",
+              "han": 29,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 6,
+              "codePoints": 6,
+              "sha256": "397ed2050704a033ee779bccc89dbaa9756cb531b32b327de7cdf874518aa288",
+              "han": 3,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 64,
+              "codePoints": 64,
+              "sha256": "8b6cd84e53641305a51546e61dfeab3c556a3fdcd2cafa110871a310b2c73f42",
+              "han": 54,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 10
+            },
+            {
+              "utf16": 66,
+              "codePoints": 66,
+              "sha256": "fc844d6fce1fd5aaa73889743a4dab02cb9c3684e50590c22bfc406d8d74e11b",
+              "han": 60,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 34,
+              "codePoints": 34,
+              "sha256": "9afc30c52d244a07fe2ec781e9115656d13c17e12ee55e9440c2df37169aa980",
+              "han": 30,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 40,
+              "codePoints": 40,
+              "sha256": "ce8d799a664b13db93c34619fd2192c697ae9853eed71844ebf638d9bb4ba3ee",
+              "han": 34,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 21,
+              "codePoints": 21,
+              "sha256": "8e4eb08e8040d44acb9ac1ae836a98a5527f6043f97d6d2a1e392aa9760da93b",
+              "han": 17,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 80,
+              "codePoints": 80,
+              "sha256": "b566516475822243f7ef073b08be238dd1b22ced8135d6c7c62e28790f5fe432",
+              "han": 71,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 9
+            },
+            {
+              "utf16": 66,
+              "codePoints": 66,
+              "sha256": "f38bb5cc33a5d29cb381988ff4deab35a30023e14bd1dfec4a15161d0e42b8fb",
+              "han": 56,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 10
+            },
+            {
+              "utf16": 37,
+              "codePoints": 37,
+              "sha256": "0bb5a705e05de158d1dee622ef0e952cfbd2da1c70313625dc2caf6d2a34ec90",
+              "han": 34,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 42,
+              "codePoints": 42,
+              "sha256": "656227f9a4a9966a1575f5e5704cb17e93e9680355fc6aab0a41c292b5cb0372",
+              "han": 34,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 8
+            }
+          ]
+        },
+        {
+          "url": "https://www.suduguu.com/3560/2308764-2.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308764-2.html",
+          "httpStatus": 200,
+          "responseBytes": 6318,
+          "responseSHA256": "8d1cb4ee40e00e010dc0e5e28f3078b2e09efd751c6875cf22a7a1abe2ddaec4",
+          "titleSHA256": "a4c5a8b9f52e02c579bc7be6e6a8ccb362d794de4df589a41033bb8095f1822e",
+          "paragraphElements": 11,
+          "extractedParagraphs": 11,
+          "extractedText": {
+            "utf16": 519,
+            "codePoints": 519,
+            "sha256": "43511e830d7ec48f5b5c21079e22cdf04559384c4ccf6ea413d0ca85f521d557"
+          },
+          "paragraphArraySHA256": "1b04c5d24f9361dcac52130dfe6f5229dceb73865502ba9b8cd016e602f36738",
+          "fullParagraphText": {
+            "utf16": 519,
+            "codePoints": 519,
+            "sha256": "43511e830d7ec48f5b5c21079e22cdf04559384c4ccf6ea413d0ca85f521d557"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": "https://www.suduguu.com/3560/2308764-3.html",
+          "visibleNextPageURL": "https://www.suduguu.com/3560/2308764-3.html",
+          "previousPageURL": "https://www.suduguu.com/3560/2308764.html",
+          "nextChapterURL": null,
+          "previousChapterURL": null,
+          "firstParagraph": {
+            "utf16": 69,
+            "codePoints": 69,
+            "sha256": "8301c2a3122e8c647f6b579322ccd2cc51195941163a1bc06f60989a5a30115b"
+          },
+          "lastParagraph": {
+            "utf16": 29,
+            "codePoints": 29,
+            "sha256": "5c05427aa925c4bb84d1d6e390cba413fbc5abfa1c56e5dd00a8dea6056a042b"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "1809c8cb9ca1d3362037dc84e6e4fb7fb4bd6c01ce18327bfe65e8f79ebda7e8"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "6f2a2eb4014b581051fe5071409c436eb1537ef504f9dc1b4147faf5be460000"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 69,
+              "codePoints": 69,
+              "sha256": "8301c2a3122e8c647f6b579322ccd2cc51195941163a1bc06f60989a5a30115b",
+              "han": 63,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 54,
+              "codePoints": 54,
+              "sha256": "e5412f601afd852dbe78b4857ea2dd91ea304859c90c5d84c64374abb629d71b",
+              "han": 49,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 50,
+              "codePoints": 50,
+              "sha256": "31b63589af8d72d6d0f37dd45ff99ddbb571fe889228ee7ea959ea4904b0c95b",
+              "han": 42,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 8
+            },
+            {
+              "utf16": 32,
+              "codePoints": 32,
+              "sha256": "fd2b30d39f34e4cd89f3652d7c935432b56762574670757bceb0fc12576e9d36",
+              "han": 27,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 53,
+              "codePoints": 53,
+              "sha256": "be7e3e73e1686fc8107fe16b34f49e9ccaa59f3add5b56082536139eede32736",
+              "han": 45,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 8
+            },
+            {
+              "utf16": 39,
+              "codePoints": 39,
+              "sha256": "2dd4eb3f8b6c19cddcb4f8575f6f1525d64b63f174a2235981587e3682bd9340",
+              "han": 33,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 82,
+              "codePoints": 82,
+              "sha256": "e5d4a9789abcaf422549412a4ee8292d9e73aeedd5248de814525616d6ee2df2",
+              "han": 71,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 11
+            },
+            {
+              "utf16": 22,
+              "codePoints": 22,
+              "sha256": "5c0caadbc7745e575fbb3632ef8d61402f6156ffd0d50ae3bf4a2e24f40ecfa4",
+              "han": 19,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 25,
+              "codePoints": 25,
+              "sha256": "d4aa27cd8d258e5a322e86cbf5b2f918bd67523e5b551baa4deab07c15eee33f",
+              "han": 21,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 64,
+              "codePoints": 64,
+              "sha256": "caa3a283b907394003f8b8d30b1d6452950e15cba324e75c2aa79052ca2d8193",
+              "han": 54,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 10
+            },
+            {
+              "utf16": 29,
+              "codePoints": 29,
+              "sha256": "5c05427aa925c4bb84d1d6e390cba413fbc5abfa1c56e5dd00a8dea6056a042b",
+              "han": 25,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            }
+          ]
+        },
+        {
+          "url": "https://www.suduguu.com/3560/2308764-3.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308764-3.html",
+          "httpStatus": 200,
+          "responseBytes": 6089,
+          "responseSHA256": "2d15d5c7e8690a214f569f874b9ff48699f7b2a66f287bd91be294c637cebbf5",
+          "titleSHA256": "6bc0f3d136f600ad5aea2c6cfa5a592e889e5c7001c60029a4860825f1588af3",
+          "paragraphElements": 11,
+          "extractedParagraphs": 11,
+          "extractedText": {
+            "utf16": 442,
+            "codePoints": 442,
+            "sha256": "d539cea35abcdccbe2591d927d12f218ce6f8906be75e0f49410f7f5789a3e72"
+          },
+          "paragraphArraySHA256": "b3a4d020a01c6b966f5f0a3ef22d427efd47f0f7c9d6ef011aafd8bab24fdf39",
+          "fullParagraphText": {
+            "utf16": 442,
+            "codePoints": 442,
+            "sha256": "d539cea35abcdccbe2591d927d12f218ce6f8906be75e0f49410f7f5789a3e72"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": "https://www.suduguu.com/3560/2308764-4.html",
+          "visibleNextPageURL": "https://www.suduguu.com/3560/2308764-4.html",
+          "previousPageURL": "https://www.suduguu.com/3560/2308764-2.html",
+          "nextChapterURL": null,
+          "previousChapterURL": null,
+          "firstParagraph": {
+            "utf16": 60,
+            "codePoints": 60,
+            "sha256": "9192537b42fa0eaa7e33cf34f94c7e4d4056e63156aaef7f36096766e22e543e"
+          },
+          "lastParagraph": {
+            "utf16": 52,
+            "codePoints": 52,
+            "sha256": "6827c41c29f2f60f9e18ea30aa39ebcf3e1053c572b083c3a4cf08e9208fd03f"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "d0a69cc59e8fa5f1b14b332f5b9893d0f5768b014a1e9ec4facc2c78ca4f78e2"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "735b2ed32d1dfdd4f81119d4a905b5dcf41ed391af7a82cbe64d4ad8f1d4ff42"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 60,
+              "codePoints": 60,
+              "sha256": "9192537b42fa0eaa7e33cf34f94c7e4d4056e63156aaef7f36096766e22e543e",
+              "han": 53,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 7
+            },
+            {
+              "utf16": 35,
+              "codePoints": 35,
+              "sha256": "52d877587191d54bf1ab8eaedd1c43e4628e135854939b92a97794260a9c614d",
+              "han": 31,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 56,
+              "codePoints": 56,
+              "sha256": "26dfcf040adc499354251e4acbc124806caac00118d0fb6c0e0882f3e52f2e42",
+              "han": 48,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 8
+            },
+            {
+              "utf16": 21,
+              "codePoints": 21,
+              "sha256": "1d505dbf278515e78fcbff0e35709509a25d2dd206539c2c864962c9f7b4e5fe",
+              "han": 18,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 33,
+              "codePoints": 33,
+              "sha256": "31e011d21d96ae21d6d575f23ef15187b81f0a2c2de1cd51e9f7b7e14ae85f84",
+              "han": 30,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 41,
+              "codePoints": 41,
+              "sha256": "9d3e0820d365cf6e8551f16d858bc4d78a7e5e5931c4f77fd135d5cd2bf9c094",
+              "han": 37,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 59,
+              "codePoints": 59,
+              "sha256": "f4143ea522e96b13b7ed458bfde9d26dba1e19b1710f8644e08339834f462cb8",
+              "han": 53,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 17,
+              "codePoints": 17,
+              "sha256": "6c6ffd05e9f5e0ba6b8078257c1110ce36450b0b3b84ebee28aed2d0b42479dd",
+              "han": 15,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 32,
+              "codePoints": 32,
+              "sha256": "9eb5fcf623fc77bed1482543387bed10a30673fa454683f97c0dee05273c9341",
+              "han": 30,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 36,
+              "codePoints": 36,
+              "sha256": "37afa293fa3c9547e23af48343d9c5e7cd289a54e0f16ce8d8315db84b7ecc60",
+              "han": 30,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 52,
+              "codePoints": 52,
+              "sha256": "6827c41c29f2f60f9e18ea30aa39ebcf3e1053c572b083c3a4cf08e9208fd03f",
+              "han": 45,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 7
+            }
+          ]
+        },
+        {
+          "url": "https://www.suduguu.com/3560/2308764-4.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308764-4.html",
+          "httpStatus": 200,
+          "responseBytes": 6546,
+          "responseSHA256": "fd087705dccd9f53b6136f1d97774b4be3808fa3f6011c28198b328519906d3a",
+          "titleSHA256": "6b825b70ed28922ecb7e4e43cb6e38c6071ae2fd705c7a77bf04cb2311320d5a",
+          "paragraphElements": 14,
+          "extractedParagraphs": 14,
+          "extractedText": {
+            "utf16": 588,
+            "codePoints": 588,
+            "sha256": "fab88f5242ee010b2b3b67f45905b33a0801fe83a0c5ab07ac4b2dda93130829"
+          },
+          "paragraphArraySHA256": "2d922676383c4353230756f4c32683c493f3c0ff6e573c2621b01c99e80a8979",
+          "fullParagraphText": {
+            "utf16": 588,
+            "codePoints": 588,
+            "sha256": "fab88f5242ee010b2b3b67f45905b33a0801fe83a0c5ab07ac4b2dda93130829"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": null,
+          "visibleNextPageURL": null,
+          "previousPageURL": "https://www.suduguu.com/3560/2308764-3.html",
+          "nextChapterURL": "https://www.suduguu.com/3560/2308765.html",
+          "previousChapterURL": null,
+          "firstParagraph": {
+            "utf16": 22,
+            "codePoints": 22,
+            "sha256": "0753b4ca87d0d962dcb1a531ee2df5617e4b65354c6e051012793e75f6b97b6e"
+          },
+          "lastParagraph": {
+            "utf16": 39,
+            "codePoints": 39,
+            "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "8f23a46e6b475acff82433a12f6d577cf3d4cb62d2b1d7b33b5bb32968a9087c"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "7620343f2554f7b58bc69f7871143fdea33fd012edd2cff29641df54541b9010"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 22,
+              "codePoints": 22,
+              "sha256": "0753b4ca87d0d962dcb1a531ee2df5617e4b65354c6e051012793e75f6b97b6e",
+              "han": 19,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 10,
+              "codePoints": 10,
+              "sha256": "ea24eec718b463de6abe7a99f58b97a92e12415dba6f673516ba56c46f65d031",
+              "han": 9,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 1
+            },
+            {
+              "utf16": 64,
+              "codePoints": 64,
+              "sha256": "2ab9604f46a2e1de89c299f40a0a8dbeb09abeab0030c32d665069106b2ff66b",
+              "han": 58,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 12,
+              "codePoints": 12,
+              "sha256": "43c4dec56995410e8f62b4cb0f3f2602d3ff7c200f3bcfda9242059467b2c9c3",
+              "han": 11,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 1
+            },
+            {
+              "utf16": 29,
+              "codePoints": 29,
+              "sha256": "69578c4832931a5f1ef839e26b75afeed35be8c92c5b5e1c06b89d948e8b603a",
+              "han": 25,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 79,
+              "codePoints": 79,
+              "sha256": "4f7d60d77633a055ec24a081efd6607d2f33d435d71c8bdc8a6a6b133b1d23d1",
+              "han": 71,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 8
+            },
+            {
+              "utf16": 49,
+              "codePoints": 49,
+              "sha256": "c7374a76dc274adb62a17045f3e693b23d9395087fb77e972e5fbd99363b0c05",
+              "han": 46,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 18,
+              "codePoints": 18,
+              "sha256": "c16a2f4a6b9c457c6e420bd66261c93af5289ba876cdf47e375d2ad8e101eb04",
+              "han": 16,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 54,
+              "codePoints": 54,
+              "sha256": "3a758dacaf2b24f4e2250b4c119916075299bda6f1ec22932ea9bf03170b1ebe",
+              "han": 46,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 8
+            },
+            {
+              "utf16": 29,
+              "codePoints": 29,
+              "sha256": "7a5fe71145526b953f67509ffd1c493780f2892f6480bb01dad19a6f0f7f1178",
+              "han": 27,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 85,
+              "codePoints": 85,
+              "sha256": "c84061589ecbaba0c598570364c28361fbabdea9460ab741e66e538cd06a3863",
+              "han": 76,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 9
+            },
+            {
+              "utf16": 36,
+              "codePoints": 36,
+              "sha256": "1e81790e3bfe98352ecce0acea2ef4e35bc1e6785ea3ea94d678aca665f8ca5c",
+              "han": 33,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 62,
+              "codePoints": 62,
+              "sha256": "837393ed4ba6221215fdbe7b3c264c855018853a6e99e6315a3272366de88f91",
+              "han": 57,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 39,
+              "codePoints": 39,
+              "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f",
+              "han": 35,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            }
+          ]
+        }
+      ],
+      "paragraphs": 47,
+      "paragraphUTF16Lengths": [
+        35,
+        6,
+        64,
+        66,
+        34,
+        40,
+        21,
+        80,
+        66,
+        37,
+        42,
+        69,
+        54,
+        50,
+        32,
+        53,
+        39,
+        82,
+        22,
+        25,
+        64,
+        29,
+        60,
+        35,
+        56,
+        21,
+        33,
+        41,
+        59,
+        17,
+        32,
+        36,
+        52,
+        22,
+        10,
+        64,
+        12,
+        29,
+        79,
+        49,
+        18,
+        54,
+        29,
+        85,
+        36,
+        62,
+        39
+      ],
+      "firstParagraph": {
+        "utf16": 35,
+        "codePoints": 35,
+        "sha256": "3fd787454d24f9aa3f1fe531b4a8b49bd259820b81df4a2335902596c1695ad0"
+      },
+      "lastParagraph": {
+        "utf16": 39,
+        "codePoints": 39,
+        "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f"
+      },
+      "text": {
+        "utf16": 2040,
+        "codePoints": 2040,
+        "sha256": "5daf6478bcdf3cc7a5be4a0afc915e25eda1c35cc22adecc9fc7468b2f9da09e"
+      },
+      "paragraphArraySHA256": "3673dd499c6baaa756309d34ed785983e5abe10df35832b73732c6e3f63bf2b0",
+      "exactOrderedMerge": true,
+      "allParagraphTextPreservedIgnoringWhitespace": true,
+      "pageLinksContinuous": true,
+      "finalNextChapterMatchesCatalog": true,
+      "boundaries": [
+        {
+          "fromURL": "https://www.suduguu.com/3560/2308764.html",
+          "toURL": "https://www.suduguu.com/3560/2308764-2.html",
+          "mergedParagraphOffset": 11,
+          "previousLast": {
+            "utf16": 42,
+            "codePoints": 42,
+            "sha256": "656227f9a4a9966a1575f5e5704cb17e93e9680355fc6aab0a41c292b5cb0372"
+          },
+          "nextFirst": {
+            "utf16": 69,
+            "codePoints": 69,
+            "sha256": "8301c2a3122e8c647f6b579322ccd2cc51195941163a1bc06f60989a5a30115b"
+          },
+          "previousLinkMatches": true,
+          "identicalAdjacentParagraph": false
+        },
+        {
+          "fromURL": "https://www.suduguu.com/3560/2308764-2.html",
+          "toURL": "https://www.suduguu.com/3560/2308764-3.html",
+          "mergedParagraphOffset": 22,
+          "previousLast": {
+            "utf16": 29,
+            "codePoints": 29,
+            "sha256": "5c05427aa925c4bb84d1d6e390cba413fbc5abfa1c56e5dd00a8dea6056a042b"
+          },
+          "nextFirst": {
+            "utf16": 60,
+            "codePoints": 60,
+            "sha256": "9192537b42fa0eaa7e33cf34f94c7e4d4056e63156aaef7f36096766e22e543e"
+          },
+          "previousLinkMatches": true,
+          "identicalAdjacentParagraph": false
+        },
+        {
+          "fromURL": "https://www.suduguu.com/3560/2308764-3.html",
+          "toURL": "https://www.suduguu.com/3560/2308764-4.html",
+          "mergedParagraphOffset": 33,
+          "previousLast": {
+            "utf16": 52,
+            "codePoints": 52,
+            "sha256": "6827c41c29f2f60f9e18ea30aa39ebcf3e1053c572b083c3a4cf08e9208fd03f"
+          },
+          "nextFirst": {
+            "utf16": 22,
+            "codePoints": 22,
+            "sha256": "0753b4ca87d0d962dcb1a531ee2df5617e4b65354c6e051012793e75f6b97b6e"
+          },
+          "previousLinkMatches": true,
+          "identicalAdjacentParagraph": false
+        }
+      ]
+    },
+    {
+      "number": 187,
+      "url": "https://www.suduguu.com/3560/2308765.html",
+      "titleSHA256": "06f77379bfb461d5a70786ebb58d2c7b4aa72010bfc0faed0ec07c5504d0e205",
+      "nextChapterURL": "https://www.suduguu.com/3560/2308766.html",
+      "status": "completed",
+      "error": null,
+      "pageCount": 4,
+      "pages": [
+        {
+          "url": "https://www.suduguu.com/3560/2308765.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308765.html",
+          "httpStatus": 200,
+          "responseBytes": 5864,
+          "responseSHA256": "6b2431460bd1ce0db226db6c22a94108f5e1e81dc1a0f7561d43a5004de3676b",
+          "titleSHA256": "01caf816a598a6266680107030dc6c6141ac51f6330e7134424f7a0988ddfe4f",
+          "paragraphElements": 10,
+          "extractedParagraphs": 10,
+          "extractedText": {
+            "utf16": 387,
+            "codePoints": 387,
+            "sha256": "cc1bc4f0650974c6a3951a3699ba453f42ac036da2906f1dc1fb52a0d6da6583"
+          },
+          "paragraphArraySHA256": "1075edac76ce35918bfad9dc41c425d2afefbfade9a3a6edd482cab5a64b2808",
+          "fullParagraphText": {
+            "utf16": 387,
+            "codePoints": 387,
+            "sha256": "cc1bc4f0650974c6a3951a3699ba453f42ac036da2906f1dc1fb52a0d6da6583"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": "https://www.suduguu.com/3560/2308765-2.html",
+          "visibleNextPageURL": "https://www.suduguu.com/3560/2308765-2.html",
+          "previousPageURL": null,
+          "nextChapterURL": null,
+          "previousChapterURL": "https://www.suduguu.com/3560/2308764.html",
+          "firstParagraph": {
+            "utf16": 28,
+            "codePoints": 28,
+            "sha256": "507a73c10ad458b03c8b71bf216cd976d76acb9b8d506bd4a7419ab1ef50650c"
+          },
+          "lastParagraph": {
+            "utf16": 15,
+            "codePoints": 15,
+            "sha256": "7adfcd996cebcfce446f85f31d34ede3746b4322e9d4b4bf7b800d587ebc3c65"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "88203c3d0ef993b3aaca8bd4464c39d159164d4a7e1f501e21bb0fdd55a96422"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "125e4d4d63c563f782d4087e9bd352a41413dd246b79512c9a8a3afa61a20d64"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 28,
+              "codePoints": 28,
+              "sha256": "507a73c10ad458b03c8b71bf216cd976d76acb9b8d506bd4a7419ab1ef50650c",
+              "han": 25,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 43,
+              "codePoints": 43,
+              "sha256": "7746eb8bc84b5e836b50ef327da7955595a1db5b2ab9af984cb63f832859c5f0",
+              "han": 40,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 18,
+              "codePoints": 18,
+              "sha256": "d0d5e52bc3e28fda9b3555f2b486a532ac8dcda511eed91fc16c6957ab469aeb",
+              "han": 16,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 79,
+              "codePoints": 79,
+              "sha256": "67966b723c6e31f2dad866755cde49715f5cac7df8de9c76f93f112837585223",
+              "han": 69,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 10
+            },
+            {
+              "utf16": 36,
+              "codePoints": 36,
+              "sha256": "3fbf738654515473471ed165f2137fc60c7b7526a087b0f7a07a997b241c5361",
+              "han": 33,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 51,
+              "codePoints": 51,
+              "sha256": "1432159cf9e4c6b73a50c17273077af0420e1ed4d8c58d0143aa7f5b3e9af687",
+              "han": 46,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 57,
+              "codePoints": 57,
+              "sha256": "a2be1cc677b02cff9672a201f2fd7b5c09f468fc14f81947dfc6807fe7c8f9c6",
+              "han": 50,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 7
+            },
+            {
+              "utf16": 44,
+              "codePoints": 44,
+              "sha256": "f9236a8b2d943275853fbb8c4a3d05aadecebd5dc8f483c0f601129f87213e88",
+              "han": 41,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 16,
+              "codePoints": 16,
+              "sha256": "8098fdbebddadcc1eb0c108da729130a4679225e067933f59b9943baab5f96e2",
+              "han": 14,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 15,
+              "codePoints": 15,
+              "sha256": "7adfcd996cebcfce446f85f31d34ede3746b4322e9d4b4bf7b800d587ebc3c65",
+              "han": 10,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            }
+          ]
+        },
+        {
+          "url": "https://www.suduguu.com/3560/2308765-2.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308765-2.html",
+          "httpStatus": 200,
+          "responseBytes": 6137,
+          "responseSHA256": "7e7ecd9f78c6458312c40760ccc2f1be32d498e484e11c2ac8f372638fd7bcd3",
+          "titleSHA256": "74ffa39afa9ca9e4efe69bb47d415e24fb1c18cfb4d4d3c6f2c9a78bb52655b8",
+          "paragraphElements": 10,
+          "extractedParagraphs": 10,
+          "extractedText": {
+            "utf16": 473,
+            "codePoints": 473,
+            "sha256": "28b02dc65efe3eb94ffe7a501ca8eb1b4ec4f1b4d6f64ce39a560fb1bc7eca34"
+          },
+          "paragraphArraySHA256": "8d94d9d6563f9f9908d3887b61d01a093ac329d8dcd5d348913064d04b69dc71",
+          "fullParagraphText": {
+            "utf16": 473,
+            "codePoints": 473,
+            "sha256": "28b02dc65efe3eb94ffe7a501ca8eb1b4ec4f1b4d6f64ce39a560fb1bc7eca34"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": "https://www.suduguu.com/3560/2308765-3.html",
+          "visibleNextPageURL": "https://www.suduguu.com/3560/2308765-3.html",
+          "previousPageURL": "https://www.suduguu.com/3560/2308765.html",
+          "nextChapterURL": null,
+          "previousChapterURL": null,
+          "firstParagraph": {
+            "utf16": 120,
+            "codePoints": 120,
+            "sha256": "381fdbfe4d9a2fa9829b676815e2a7e2083e7ab66afbee3cd461d09179a0b2c4"
+          },
+          "lastParagraph": {
+            "utf16": 46,
+            "codePoints": 46,
+            "sha256": "193180dd576a99589240382940724913411e76e2aa9decb4545a5ed0dff864ca"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "1032ecd75e9d461fcb42da5934239085b91a09930e73947226aeed3f644b64c7"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "86844e7349c7058100230d71947bef2cfae6ca3ce6c127e4726c7b0c2a3a50d3"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 120,
+              "codePoints": 120,
+              "sha256": "381fdbfe4d9a2fa9829b676815e2a7e2083e7ab66afbee3cd461d09179a0b2c4",
+              "han": 106,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 14
+            },
+            {
+              "utf16": 64,
+              "codePoints": 64,
+              "sha256": "131a49643ed09f1a49d52c6d48a092effcf72cf4bff6fa705d11fdcf3dc657f0",
+              "han": 57,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 7
+            },
+            {
+              "utf16": 18,
+              "codePoints": 18,
+              "sha256": "6d2dee6b5a2ec66dc47da8f8b455ed28af8d20594ce7623faffc4a960d2a4329",
+              "han": 16,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 58,
+              "codePoints": 58,
+              "sha256": "5cbcd8a62bf24f551875697ccfad15f27fe50004184bafe750cb1011cba44143",
+              "han": 48,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 10
+            },
+            {
+              "utf16": 7,
+              "codePoints": 7,
+              "sha256": "8f667b8fc6d9fc145b29cadc06ba4cd6e48687e8fa9e0449db507b79c8fc416c",
+              "han": 6,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 1
+            },
+            {
+              "utf16": 35,
+              "codePoints": 35,
+              "sha256": "721c6c2eb35f2e1b97fb1be3f4e2245832fa9a7f91148d832e29c33008acfdc4",
+              "han": 29,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 47,
+              "codePoints": 47,
+              "sha256": "d5eecfb50ff8b4ab2eb4a232806ff757c7767884470469d2e737ebdad4e42e3a",
+              "han": 38,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 9
+            },
+            {
+              "utf16": 13,
+              "codePoints": 13,
+              "sha256": "63801bbcf63de06fafef9eea84a6c63660f8def48ba53b3653bf9cc43e532368",
+              "han": 11,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 65,
+              "codePoints": 65,
+              "sha256": "8ca0ec070d3d359aeae600ca0424410271a7020a3bd0da78b89ded98b773abcf",
+              "han": 58,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 7
+            },
+            {
+              "utf16": 46,
+              "codePoints": 46,
+              "sha256": "193180dd576a99589240382940724913411e76e2aa9decb4545a5ed0dff864ca",
+              "han": 40,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            }
+          ]
+        },
+        {
+          "url": "https://www.suduguu.com/3560/2308765-3.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308765-3.html",
+          "httpStatus": 200,
+          "responseBytes": 6158,
+          "responseSHA256": "cff7773b31ac8a5f341fc4febb1bcf489fd7771ffd907d9e5b1b0627dbb8237e",
+          "titleSHA256": "2fda4a1d354620ce4b70647a1cea789d939eff64bdaae587599f925136266ced",
+          "paragraphElements": 10,
+          "extractedParagraphs": 10,
+          "extractedText": {
+            "utf16": 480,
+            "codePoints": 480,
+            "sha256": "9417a93958d987a6b374dccecc1048c54fed404b4be207fa8dbebbfaced49676"
+          },
+          "paragraphArraySHA256": "4ab633697a54a043067cd8ffbbe057bd48b5d8f9823403f6d103c6b9ac105242",
+          "fullParagraphText": {
+            "utf16": 480,
+            "codePoints": 480,
+            "sha256": "9417a93958d987a6b374dccecc1048c54fed404b4be207fa8dbebbfaced49676"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": "https://www.suduguu.com/3560/2308765-4.html",
+          "visibleNextPageURL": "https://www.suduguu.com/3560/2308765-4.html",
+          "previousPageURL": "https://www.suduguu.com/3560/2308765-2.html",
+          "nextChapterURL": null,
+          "previousChapterURL": null,
+          "firstParagraph": {
+            "utf16": 53,
+            "codePoints": 53,
+            "sha256": "52cd4a90e50cb4394e602f6b9c34db3cf14fd94002ff5b49078250dfc5e97f10"
+          },
+          "lastParagraph": {
+            "utf16": 17,
+            "codePoints": 17,
+            "sha256": "8eb6c943e772303afc052033b24800910422009781fc5986def75c64f739cf24"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "25f5f36143e8b1ec0d571e06be5aba01762f50ba30a0d71f3504941d492b49ea"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "9ce0c450fefe6fab7ae379a4dfdd09e9cb7408690fd01c260c100e119a9f2e96"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 53,
+              "codePoints": 53,
+              "sha256": "52cd4a90e50cb4394e602f6b9c34db3cf14fd94002ff5b49078250dfc5e97f10",
+              "han": 46,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 7
+            },
+            {
+              "utf16": 18,
+              "codePoints": 18,
+              "sha256": "7a73c09c3418a168c5f90095004fe304c6227c12b07347b4034fcfe06b571118",
+              "han": 16,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 54,
+              "codePoints": 54,
+              "sha256": "fab3170c8f8e0a99f41533a6348a0a2dad2d7677610e11e55baa00bc3f246326",
+              "han": 50,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 70,
+              "codePoints": 70,
+              "sha256": "ead96c1d057d4c3021e96d3a132b6553a3d1b3da8c2220526079bf2c98c5847a",
+              "han": 58,
+              "ascii": 1,
+              "whitespace": 0,
+              "punctuation": 11
+            },
+            {
+              "utf16": 43,
+              "codePoints": 43,
+              "sha256": "4c942a80947b11f1c36f3b3c5ffa84b64822e9d99e579a8a6342c9e5f6c28f1a",
+              "han": 37,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 83,
+              "codePoints": 83,
+              "sha256": "b663be5cd22f97b06da17131ef2d909e3c1667dea02797e08627dbfdca729992",
+              "han": 73,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 10
+            },
+            {
+              "utf16": 48,
+              "codePoints": 48,
+              "sha256": "4d6468349b872017cf4249a4939430dc75772016386058471855ef1039490afc",
+              "han": 45,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 55,
+              "codePoints": 55,
+              "sha256": "60d737f12f875c818ef3a57dea4573b4182c1240138f0b16390b5f07ee42faf8",
+              "han": 50,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 39,
+              "codePoints": 39,
+              "sha256": "c1370fc962e717d0ccb5500945ff31342a90d5c5755a563b950d7cb83029226c",
+              "han": 35,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 17,
+              "codePoints": 17,
+              "sha256": "8eb6c943e772303afc052033b24800910422009781fc5986def75c64f739cf24",
+              "han": 15,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            }
+          ]
+        },
+        {
+          "url": "https://www.suduguu.com/3560/2308765-4.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308765-4.html",
+          "httpStatus": 200,
+          "responseBytes": 6923,
+          "responseSHA256": "c0c785d89c6b391b69b382368c047b5a647c131f7410d21be385c80c0f6dba62",
+          "titleSHA256": "d6e33a23d2052c50afbcf72cce36e254601003bcfaf72c46ebc4f0ae291d867d",
+          "paragraphElements": 13,
+          "extractedParagraphs": 13,
+          "extractedText": {
+            "utf16": 728,
+            "codePoints": 728,
+            "sha256": "f7c68206cf048a6baa5cf0714b44e74edd6bf8cc7ad839535dd40f1bb6dd0284"
+          },
+          "paragraphArraySHA256": "064b2c939661128eef7363a5a4e6dcb7bffa72a4fb6c4a5dd8a75b722c9bd01d",
+          "fullParagraphText": {
+            "utf16": 728,
+            "codePoints": 728,
+            "sha256": "f7c68206cf048a6baa5cf0714b44e74edd6bf8cc7ad839535dd40f1bb6dd0284"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": null,
+          "visibleNextPageURL": null,
+          "previousPageURL": "https://www.suduguu.com/3560/2308765-3.html",
+          "nextChapterURL": "https://www.suduguu.com/3560/2308766.html",
+          "previousChapterURL": null,
+          "firstParagraph": {
+            "utf16": 61,
+            "codePoints": 61,
+            "sha256": "d498abe8c3bfd954eaf298fe0777716150bcdd457fadd6c29b6b3eb65e13e600"
+          },
+          "lastParagraph": {
+            "utf16": 39,
+            "codePoints": 39,
+            "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "b56d78797661343383671b20035d4d353237ed7dc5e7f3844ef264493bd5fb14"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "ec9adc814952d5a55d0c655a43c617674db4e71a15045d85fad2096045dad0c6"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 61,
+              "codePoints": 61,
+              "sha256": "d498abe8c3bfd954eaf298fe0777716150bcdd457fadd6c29b6b3eb65e13e600",
+              "han": 55,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 75,
+              "codePoints": 75,
+              "sha256": "b600df8610bf8124cfdc02622220ac07cd729088eed1ca6a1d3d2f17653b0d32",
+              "han": 62,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 13
+            },
+            {
+              "utf16": 40,
+              "codePoints": 40,
+              "sha256": "1c6ce90455891a2d6b77f789519ab6712a5ec555a87f29d665626a423fc1061d",
+              "han": 30,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 10
+            },
+            {
+              "utf16": 43,
+              "codePoints": 43,
+              "sha256": "d277dcc93e42c551ef6cde24bd35e5fbd1ee662e5b4745d18618ed77420e6113",
+              "han": 39,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 37,
+              "codePoints": 37,
+              "sha256": "63ac8296cff5852859c64d36d4b8b332e393d7a7cfd8da175b61427ec6fb2d3e",
+              "han": 34,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 70,
+              "codePoints": 70,
+              "sha256": "4b5616537a9360a50f1204189839332e77f4cf26965f193889fc31398bba8bd9",
+              "han": 59,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 11
+            },
+            {
+              "utf16": 71,
+              "codePoints": 71,
+              "sha256": "e23670bccb928397a1f08ea6f5f800730be8f5d507b386877638548596746f06",
+              "han": 60,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 11
+            },
+            {
+              "utf16": 56,
+              "codePoints": 56,
+              "sha256": "6b0ee880dabe3a3b17b519734717c75d8699fabbc958d98acd1e57c228bf94c6",
+              "han": 50,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 61,
+              "codePoints": 61,
+              "sha256": "149c488906339840536e1d672c16b194b0d76700e235f7052b9c77efedd39439",
+              "han": 55,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 52,
+              "codePoints": 52,
+              "sha256": "c308c58bb9ed043051c12f7f1e1ccea267b65460d81c778e05edb19e6fc870fe",
+              "han": 46,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 61,
+              "codePoints": 61,
+              "sha256": "4f24cf5b58b82bf4e585cf1383db48e94054df13fd9c5237625afd277b3c0769",
+              "han": 56,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 62,
+              "codePoints": 62,
+              "sha256": "9105cdc30d44ca77ec15906f362655fe0dc6c162e89629fa9b71cbdd9b2c1595",
+              "han": 55,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 7
+            },
+            {
+              "utf16": 39,
+              "codePoints": 39,
+              "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f",
+              "han": 35,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            }
+          ]
+        }
+      ],
+      "paragraphs": 43,
+      "paragraphUTF16Lengths": [
+        28,
+        43,
+        18,
+        79,
+        36,
+        51,
+        57,
+        44,
+        16,
+        15,
+        120,
+        64,
+        18,
+        58,
+        7,
+        35,
+        47,
+        13,
+        65,
+        46,
+        53,
+        18,
+        54,
+        70,
+        43,
+        83,
+        48,
+        55,
+        39,
+        17,
+        61,
+        75,
+        40,
+        43,
+        37,
+        70,
+        71,
+        56,
+        61,
+        52,
+        61,
+        62,
+        39
+      ],
+      "firstParagraph": {
+        "utf16": 28,
+        "codePoints": 28,
+        "sha256": "507a73c10ad458b03c8b71bf216cd976d76acb9b8d506bd4a7419ab1ef50650c"
+      },
+      "lastParagraph": {
+        "utf16": 39,
+        "codePoints": 39,
+        "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f"
+      },
+      "text": {
+        "utf16": 2068,
+        "codePoints": 2068,
+        "sha256": "d34fce09f446c3f4de1f88fe3bc9380d6562ff7a7c273b08117e22ef703ac4b6"
+      },
+      "paragraphArraySHA256": "2ed26fd643e4a9900dec1d98f7fd2babb868f7134b2953dee0e95a8113741a83",
+      "exactOrderedMerge": true,
+      "allParagraphTextPreservedIgnoringWhitespace": true,
+      "pageLinksContinuous": true,
+      "finalNextChapterMatchesCatalog": true,
+      "boundaries": [
+        {
+          "fromURL": "https://www.suduguu.com/3560/2308765.html",
+          "toURL": "https://www.suduguu.com/3560/2308765-2.html",
+          "mergedParagraphOffset": 10,
+          "previousLast": {
+            "utf16": 15,
+            "codePoints": 15,
+            "sha256": "7adfcd996cebcfce446f85f31d34ede3746b4322e9d4b4bf7b800d587ebc3c65"
+          },
+          "nextFirst": {
+            "utf16": 120,
+            "codePoints": 120,
+            "sha256": "381fdbfe4d9a2fa9829b676815e2a7e2083e7ab66afbee3cd461d09179a0b2c4"
+          },
+          "previousLinkMatches": true,
+          "identicalAdjacentParagraph": false
+        },
+        {
+          "fromURL": "https://www.suduguu.com/3560/2308765-2.html",
+          "toURL": "https://www.suduguu.com/3560/2308765-3.html",
+          "mergedParagraphOffset": 20,
+          "previousLast": {
+            "utf16": 46,
+            "codePoints": 46,
+            "sha256": "193180dd576a99589240382940724913411e76e2aa9decb4545a5ed0dff864ca"
+          },
+          "nextFirst": {
+            "utf16": 53,
+            "codePoints": 53,
+            "sha256": "52cd4a90e50cb4394e602f6b9c34db3cf14fd94002ff5b49078250dfc5e97f10"
+          },
+          "previousLinkMatches": true,
+          "identicalAdjacentParagraph": false
+        },
+        {
+          "fromURL": "https://www.suduguu.com/3560/2308765-3.html",
+          "toURL": "https://www.suduguu.com/3560/2308765-4.html",
+          "mergedParagraphOffset": 30,
+          "previousLast": {
+            "utf16": 17,
+            "codePoints": 17,
+            "sha256": "8eb6c943e772303afc052033b24800910422009781fc5986def75c64f739cf24"
+          },
+          "nextFirst": {
+            "utf16": 61,
+            "codePoints": 61,
+            "sha256": "d498abe8c3bfd954eaf298fe0777716150bcdd457fadd6c29b6b3eb65e13e600"
+          },
+          "previousLinkMatches": true,
+          "identicalAdjacentParagraph": false
+        }
+      ]
+    },
+    {
+      "number": 188,
+      "url": "https://www.suduguu.com/3560/2308766.html",
+      "titleSHA256": "99b52ab75bb5499209ccb914bf8be1c9659d1bcb81dbd8e7e4318eddacf2652a",
+      "nextChapterURL": "https://www.suduguu.com/3560/2308767.html",
+      "status": "completed",
+      "error": null,
+      "pageCount": 4,
+      "pages": [
+        {
+          "url": "https://www.suduguu.com/3560/2308766.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308766.html",
+          "httpStatus": 200,
+          "responseBytes": 6300,
+          "responseSHA256": "0fa5bc94d99249c73d68d18bf07b5375fc7602f52eb11579d195aaf6cec12bbd",
+          "titleSHA256": "4c9df370f3b3d1bef29202ef6174f0bbba77bbdef0ff04a0616f9af05f83602c",
+          "paragraphElements": 11,
+          "extractedParagraphs": 11,
+          "extractedText": {
+            "utf16": 518,
+            "codePoints": 518,
+            "sha256": "246ffff733c7a695f7c140941e80fbf52f7c349146e0f2174b80080e172220eb"
+          },
+          "paragraphArraySHA256": "54d2c79997d1c6bd67c0df1171e0e7345013a2d750d522ded8442c5ba96a2a8f",
+          "fullParagraphText": {
+            "utf16": 518,
+            "codePoints": 518,
+            "sha256": "246ffff733c7a695f7c140941e80fbf52f7c349146e0f2174b80080e172220eb"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": "https://www.suduguu.com/3560/2308766-2.html",
+          "visibleNextPageURL": "https://www.suduguu.com/3560/2308766-2.html",
+          "previousPageURL": null,
+          "nextChapterURL": null,
+          "previousChapterURL": "https://www.suduguu.com/3560/2308765.html",
+          "firstParagraph": {
+            "utf16": 79,
+            "codePoints": 79,
+            "sha256": "28093377e7ce1555c6a7ab5744c1ba0d17642467836b179cc917d9009abce738"
+          },
+          "lastParagraph": {
+            "utf16": 47,
+            "codePoints": 47,
+            "sha256": "b434c588bbe49f0711f04c1686c416cd5c8256ddadd0ea82ac5613f616cffcde"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "036e45b7b1a41d9783b3ee0f011a092fa85d603c3c1898d045e5674652ef6b46"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "31392ec200682c854436cb4ec988e4cb7dd90a20c7f14bc1d2d6e278118c808e"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 79,
+              "codePoints": 79,
+              "sha256": "28093377e7ce1555c6a7ab5744c1ba0d17642467836b179cc917d9009abce738",
+              "han": 66,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 13
+            },
+            {
+              "utf16": 74,
+              "codePoints": 74,
+              "sha256": "efd59cce68c01c0d20403a922e6626b38de7b1a5df76393b99e165371a477721",
+              "han": 67,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 7
+            },
+            {
+              "utf16": 64,
+              "codePoints": 64,
+              "sha256": "a44afb700893efa24877936ab19bdd39295447eaf333f4bb7e98c1ccb4ee77ee",
+              "han": 58,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 20,
+              "codePoints": 20,
+              "sha256": "20340dacbe5e9026292fda721872ddb98d40b26fadd5fcc84c1c356d72d48bf1",
+              "han": 18,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 29,
+              "codePoints": 29,
+              "sha256": "cdf8a740e5e12a89ac8626c5a65d18ae73af5dfdc0062038306baa20fbb1048a",
+              "han": 27,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 54,
+              "codePoints": 54,
+              "sha256": "e3c3d20e75d0a78964a5eb23922267376cd82e133ecbe62aee87b1115dbbc1bb",
+              "han": 48,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 44,
+              "codePoints": 44,
+              "sha256": "e54aaba98b644da6a73bba27843c626d4ef97e3519813584cfc083623939d1db",
+              "han": 40,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 19,
+              "codePoints": 19,
+              "sha256": "b2ea5f8773d3ae661f5a97b0447a3485e3cf59f5397e9622a7bbdd718a2a1121",
+              "han": 17,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 22,
+              "codePoints": 22,
+              "sha256": "dc0ae1ae7891299b75df7cc9093be037fe4834cf51d8eff3afff725c7be3923d",
+              "han": 19,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 66,
+              "codePoints": 66,
+              "sha256": "7b406e704f29f7cf2bdb3d1c5d8ccd46bcf649e97992229d801165f8281789e3",
+              "han": 62,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 47,
+              "codePoints": 47,
+              "sha256": "b434c588bbe49f0711f04c1686c416cd5c8256ddadd0ea82ac5613f616cffcde",
+              "han": 42,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            }
+          ]
+        },
+        {
+          "url": "https://www.suduguu.com/3560/2308766-2.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308766-2.html",
+          "httpStatus": 200,
+          "responseBytes": 6258,
+          "responseSHA256": "3fefcca8d0e4b35aa5a78e3630be3933b4b7830ad4a677b30649d7ed3b6f9858",
+          "titleSHA256": "5960967ceb9139714f44149cbcda58b9912ebf58c32741683eaaf4cb2ba92bf1",
+          "paragraphElements": 11,
+          "extractedParagraphs": 11,
+          "extractedText": {
+            "utf16": 499,
+            "codePoints": 499,
+            "sha256": "9840b452acab8b0b3e8dce8c0eb85a55c8032b03f42c5f19a65911ceb60c41af"
+          },
+          "paragraphArraySHA256": "f52c49d9673d8d32ed69f787331b446e0a28abd1a8f5f135d2beff5912c431ac",
+          "fullParagraphText": {
+            "utf16": 499,
+            "codePoints": 499,
+            "sha256": "9840b452acab8b0b3e8dce8c0eb85a55c8032b03f42c5f19a65911ceb60c41af"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": "https://www.suduguu.com/3560/2308766-3.html",
+          "visibleNextPageURL": "https://www.suduguu.com/3560/2308766-3.html",
+          "previousPageURL": "https://www.suduguu.com/3560/2308766.html",
+          "nextChapterURL": null,
+          "previousChapterURL": null,
+          "firstParagraph": {
+            "utf16": 28,
+            "codePoints": 28,
+            "sha256": "0379ab76312ebc82bcc4b8bb1fb3b205887b95b6f43b3718deaab268e7bc5cb9"
+          },
+          "lastParagraph": {
+            "utf16": 21,
+            "codePoints": 21,
+            "sha256": "dfa080742a3ee8b2d24cd28c3166ce66325cc6b39584992e5ddecee77bf81c33"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "81c1a1aeb8b80984eed35602773c5c761f4d9d3ef398465db686d7dabf257b3f"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "7a094b3edbe28359dca55f0981fbf85d1b447b11236f6bc87875628195479b67"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 28,
+              "codePoints": 28,
+              "sha256": "0379ab76312ebc82bcc4b8bb1fb3b205887b95b6f43b3718deaab268e7bc5cb9",
+              "han": 25,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 46,
+              "codePoints": 46,
+              "sha256": "757a49f2a21acf846c1693642f27a7b23583ef3d561d1e4a8003ffae92a217a0",
+              "han": 41,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 52,
+              "codePoints": 52,
+              "sha256": "e54401813255e6284d170658ee777b3c720f12009f6372a06d96f2366acc04cf",
+              "han": 49,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 56,
+              "codePoints": 56,
+              "sha256": "9e26e66fb01eee3021572f33cd1f641958208244e564b69dbe2dce379055885c",
+              "han": 51,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 32,
+              "codePoints": 32,
+              "sha256": "f51481537c0b8996b71c8bf3240f1853ae35c1289a9f97561d99b75deee566b2",
+              "han": 30,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 27,
+              "codePoints": 27,
+              "sha256": "fa0e2f5e3b87eb681fa243842f80bba55c87a91eef49929802a7573c0d420616",
+              "han": 25,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 69,
+              "codePoints": 69,
+              "sha256": "bf3ade1dcf82f2d720dc6ba470b5c7d9388d078c7db781df3173131f4fbce234",
+              "han": 63,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 54,
+              "codePoints": 54,
+              "sha256": "26d5a447f004b6f4642bd3de218e03c2f11867785516bde1497ef6d02b86fd9d",
+              "han": 51,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 28,
+              "codePoints": 28,
+              "sha256": "e7cbc148a8e4e1de674493502fea21635d48ed7a9e0cde0e22bd31c9c5b4ee95",
+              "han": 25,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 86,
+              "codePoints": 86,
+              "sha256": "1e60173e4953a51867a7952d873da2e3f099c064129099761da8754c19627289",
+              "han": 75,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 11
+            },
+            {
+              "utf16": 21,
+              "codePoints": 21,
+              "sha256": "dfa080742a3ee8b2d24cd28c3166ce66325cc6b39584992e5ddecee77bf81c33",
+              "han": 19,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            }
+          ]
+        },
+        {
+          "url": "https://www.suduguu.com/3560/2308766-3.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308766-3.html",
+          "httpStatus": 200,
+          "responseBytes": 6368,
+          "responseSHA256": "d73453b9fa629ccd57c7c30ff76c0183dea045ecb2d3b1f3cecf28bc11b49030",
+          "titleSHA256": "11f7a4be26c0e0b44a6201342796739ce2f176597141b018c70dcb938ee234f3",
+          "paragraphElements": 11,
+          "extractedParagraphs": 11,
+          "extractedText": {
+            "utf16": 535,
+            "codePoints": 535,
+            "sha256": "66ea7442c8d8bb0657eee80ff2947313045e927b8762c7f64176d45039ed2753"
+          },
+          "paragraphArraySHA256": "5710942b91c7eae60fa9d73f45a1312b435048029066bccbad43724962d4c303",
+          "fullParagraphText": {
+            "utf16": 535,
+            "codePoints": 535,
+            "sha256": "66ea7442c8d8bb0657eee80ff2947313045e927b8762c7f64176d45039ed2753"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": "https://www.suduguu.com/3560/2308766-4.html",
+          "visibleNextPageURL": "https://www.suduguu.com/3560/2308766-4.html",
+          "previousPageURL": "https://www.suduguu.com/3560/2308766-2.html",
+          "nextChapterURL": null,
+          "previousChapterURL": null,
+          "firstParagraph": {
+            "utf16": 55,
+            "codePoints": 55,
+            "sha256": "efb531c4b7f2c81f32f577133aa6f7d5946531485ac2efab75d2cfb4816d7afc"
+          },
+          "lastParagraph": {
+            "utf16": 92,
+            "codePoints": 92,
+            "sha256": "e6001975c4e994dc34dab3f29eaff1c3dc66daa4a3a6b7e4bb2cf97e6ca6b90d"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "68d01017887edd5cd0a9bdf621b18cf7e8ff1414a55e886772ccb37a9ba1e1a9"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "e7c9f47f1b5f8ca19ddc17cc82e4ae81ad6237178924e8481e97308835c4ad40"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 55,
+              "codePoints": 55,
+              "sha256": "efb531c4b7f2c81f32f577133aa6f7d5946531485ac2efab75d2cfb4816d7afc",
+              "han": 51,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 49,
+              "codePoints": 49,
+              "sha256": "aae1977ee2fca8abf3661e42669812ea25799b2819d19b0d978f0e58d936ff78",
+              "han": 42,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 7
+            },
+            {
+              "utf16": 69,
+              "codePoints": 69,
+              "sha256": "5577f2ef242508c4dd625e57b0c35ade2fccea5ece390d5c18758ddf26a584cb",
+              "han": 63,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 28,
+              "codePoints": 28,
+              "sha256": "2fd00b57384b8ba6fe48e8871b60b957acd89f51cfc78adbcfd7b3c9562740db",
+              "han": 25,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 63,
+              "codePoints": 63,
+              "sha256": "b7c67ab33920388608d6ca2893e37db8e8b8d5369f9a90701d3478baf32c1383",
+              "han": 58,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 26,
+              "codePoints": 26,
+              "sha256": "d23b81d86e29e43cefc4b4834ee4561138d0a79320e9cf9df041de56b7f320a3",
+              "han": 23,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 47,
+              "codePoints": 47,
+              "sha256": "c48fa3f6f18d2b4a988cedebf2cffd01ecf6d5b58de571d71fa9c7770ecf0fc8",
+              "han": 43,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 42,
+              "codePoints": 42,
+              "sha256": "06a54ee8463bd5046d8e7240c71e1b326ca642417958def25f2a9f55502a77e1",
+              "han": 39,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 14,
+              "codePoints": 14,
+              "sha256": "4651f7e60492c62acf8834dd5402c188b7cfb338783542d42ffc550092514f4e",
+              "han": 10,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            },
+            {
+              "utf16": 50,
+              "codePoints": 50,
+              "sha256": "6e3edd628c854c592b17d949bdaf0883b2b263b7e8cd0e123267a3ee7fd7f23a",
+              "han": 45,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 92,
+              "codePoints": 92,
+              "sha256": "e6001975c4e994dc34dab3f29eaff1c3dc66daa4a3a6b7e4bb2cf97e6ca6b90d",
+              "han": 82,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 10
+            }
+          ]
+        },
+        {
+          "url": "https://www.suduguu.com/3560/2308766-4.html",
+          "requestedURL": "https://www.suduguu.com/3560/2308766-4.html",
+          "httpStatus": 200,
+          "responseBytes": 6268,
+          "responseSHA256": "b2d3b309a786ad24a0836cd6162c102eb76c4550cc5789080f4fc28a61d68a8b",
+          "titleSHA256": "7f6cd717cd02378c82563eedb00f340bb3c8242c96cecea0763734a8d1b3fe10",
+          "paragraphElements": 12,
+          "extractedParagraphs": 12,
+          "extractedText": {
+            "utf16": 500,
+            "codePoints": 500,
+            "sha256": "67af7b159ea630f7ddaa1295dd08f7967aee0bbcdea3854edf27f1519fcf3b59"
+          },
+          "paragraphArraySHA256": "b0b03aaed93d449978bfe88c768eb23da2cfb2635d160daa3c6a0bac5d3caf47",
+          "fullParagraphText": {
+            "utf16": 500,
+            "codePoints": 500,
+            "sha256": "67af7b159ea630f7ddaa1295dd08f7967aee0bbcdea3854edf27f1519fcf3b59"
+          },
+          "equalIgnoringWhitespace": true,
+          "nestedParagraphs": [],
+          "directVsFullDifferences": [],
+          "selectedNextPageURL": null,
+          "visibleNextPageURL": null,
+          "previousPageURL": "https://www.suduguu.com/3560/2308766-3.html",
+          "nextChapterURL": "https://www.suduguu.com/3560/2308767.html",
+          "previousChapterURL": null,
+          "firstParagraph": {
+            "utf16": 55,
+            "codePoints": 55,
+            "sha256": "8ee24c1687824cafab076274a66e81d6f18bebaf6cbf262cfc27cc7e7c723a99"
+          },
+          "lastParagraph": {
+            "utf16": 39,
+            "codePoints": 39,
+            "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f"
+          },
+          "head64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "95c43f1733be7c56a876548ad7dc0a3586e5dea1ed93635d79ae6d1e1ba83921"
+          },
+          "tail64": {
+            "utf16": 64,
+            "codePoints": 64,
+            "sha256": "12b3dc9767649af90f14c36e10941be0758e7bc8cc0b1379b1605034739501f6"
+          },
+          "paragraphProfiles": [
+            {
+              "utf16": 55,
+              "codePoints": 55,
+              "sha256": "8ee24c1687824cafab076274a66e81d6f18bebaf6cbf262cfc27cc7e7c723a99",
+              "han": 49,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 32,
+              "codePoints": 32,
+              "sha256": "44fec50468ffc09b94fc6f3a325f845b52d608c42f979b625f40fa7e53f73cb9",
+              "han": 29,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 13,
+              "codePoints": 13,
+              "sha256": "2e7d923279e78791b825028447f0178ad49c94a91382ef30d7bca8680da5c8ff",
+              "han": 11,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 2
+            },
+            {
+              "utf16": 56,
+              "codePoints": 56,
+              "sha256": "b8f25f7aceea6a1fe3270869f6a7e4d3e12e146b9d0ebb27242dd20fd1ec4df8",
+              "han": 51,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 24,
+              "codePoints": 24,
+              "sha256": "4e1ef4edf438e7fbc5d5e5bfc839d9e5553c64366ae7e1c9e647caa0bce4c136",
+              "han": 21,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 3
+            },
+            {
+              "utf16": 59,
+              "codePoints": 59,
+              "sha256": "6a706393adafbe3ecc1c559516a38853f8aaa6ce4f853b3902dba309ed8482fc",
+              "han": 53,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 6
+            },
+            {
+              "utf16": 38,
+              "codePoints": 38,
+              "sha256": "e6d0183ff66c02b1446c0112fc12feb5ded95c3a0d5e842315e8d57da2b80cf0",
+              "han": 33,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 63,
+              "codePoints": 63,
+              "sha256": "7194d5bf9ff7c8cf14722a8dabad87c6275b9f8e83600a347e6b0c6ee422164c",
+              "han": 58,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 41,
+              "codePoints": 41,
+              "sha256": "d6e7478ace148083e36417b96a0d488f461247a2445a5e820799451a758124af",
+              "han": 36,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 5
+            },
+            {
+              "utf16": 8,
+              "codePoints": 8,
+              "sha256": "cdc99eb79066bfb8031c379276981a7f2d675dc4aa0de0a769eac6bf36e6f47d",
+              "han": 7,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 1
+            },
+            {
+              "utf16": 72,
+              "codePoints": 72,
+              "sha256": "42ba487b8d08beb1e79c9b9220f2617b71c881b2cf11dc7b239bb5c15c7aae33",
+              "han": 59,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 13
+            },
+            {
+              "utf16": 39,
+              "codePoints": 39,
+              "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f",
+              "han": 35,
+              "ascii": 0,
+              "whitespace": 0,
+              "punctuation": 4
+            }
+          ]
+        }
+      ],
+      "paragraphs": 45,
+      "paragraphUTF16Lengths": [
+        79,
+        74,
+        64,
+        20,
+        29,
+        54,
+        44,
+        19,
+        22,
+        66,
+        47,
+        28,
+        46,
+        52,
+        56,
+        32,
+        27,
+        69,
+        54,
+        28,
+        86,
+        21,
+        55,
+        49,
+        69,
+        28,
+        63,
+        26,
+        47,
+        42,
+        14,
+        50,
+        92,
+        55,
+        32,
+        13,
+        56,
+        24,
+        59,
+        38,
+        63,
+        41,
+        8,
+        72,
+        39
+      ],
+      "firstParagraph": {
+        "utf16": 79,
+        "codePoints": 79,
+        "sha256": "28093377e7ce1555c6a7ab5744c1ba0d17642467836b179cc917d9009abce738"
+      },
+      "lastParagraph": {
+        "utf16": 39,
+        "codePoints": 39,
+        "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f"
+      },
+      "text": {
+        "utf16": 2052,
+        "codePoints": 2052,
+        "sha256": "b3b7274c5dca27b2d97771cc12c53b511e3272035271c6ef059be56f4b7d1b98"
+      },
+      "paragraphArraySHA256": "48bb3813929d58b390421c9ed59ca56bc4f34ef56177bf6444830f9dbfd7bcf5",
+      "exactOrderedMerge": true,
+      "allParagraphTextPreservedIgnoringWhitespace": true,
+      "pageLinksContinuous": true,
+      "finalNextChapterMatchesCatalog": true,
+      "boundaries": [
+        {
+          "fromURL": "https://www.suduguu.com/3560/2308766.html",
+          "toURL": "https://www.suduguu.com/3560/2308766-2.html",
+          "mergedParagraphOffset": 11,
+          "previousLast": {
+            "utf16": 47,
+            "codePoints": 47,
+            "sha256": "b434c588bbe49f0711f04c1686c416cd5c8256ddadd0ea82ac5613f616cffcde"
+          },
+          "nextFirst": {
+            "utf16": 28,
+            "codePoints": 28,
+            "sha256": "0379ab76312ebc82bcc4b8bb1fb3b205887b95b6f43b3718deaab268e7bc5cb9"
+          },
+          "previousLinkMatches": true,
+          "identicalAdjacentParagraph": false
+        },
+        {
+          "fromURL": "https://www.suduguu.com/3560/2308766-2.html",
+          "toURL": "https://www.suduguu.com/3560/2308766-3.html",
+          "mergedParagraphOffset": 22,
+          "previousLast": {
+            "utf16": 21,
+            "codePoints": 21,
+            "sha256": "dfa080742a3ee8b2d24cd28c3166ce66325cc6b39584992e5ddecee77bf81c33"
+          },
+          "nextFirst": {
+            "utf16": 55,
+            "codePoints": 55,
+            "sha256": "efb531c4b7f2c81f32f577133aa6f7d5946531485ac2efab75d2cfb4816d7afc"
+          },
+          "previousLinkMatches": true,
+          "identicalAdjacentParagraph": false
+        },
+        {
+          "fromURL": "https://www.suduguu.com/3560/2308766-3.html",
+          "toURL": "https://www.suduguu.com/3560/2308766-4.html",
+          "mergedParagraphOffset": 33,
+          "previousLast": {
+            "utf16": 92,
+            "codePoints": 92,
+            "sha256": "e6001975c4e994dc34dab3f29eaff1c3dc66daa4a3a6b7e4bb2cf97e6ca6b90d"
+          },
+          "nextFirst": {
+            "utf16": 55,
+            "codePoints": 55,
+            "sha256": "8ee24c1687824cafab076274a66e81d6f18bebaf6cbf262cfc27cc7e7c723a99"
+          },
+          "previousLinkMatches": true,
+          "identicalAdjacentParagraph": false
+        }
+      ]
+    }
+  ],
+  "findings": [],
+  "searchResults": [
+    {
+      "url": "https://www.suduguu.com/3560/",
+      "titleSHA256": "38a4af9d044ef5a6ae94e939c2f7a136c60e3c10e5cb5718a5102ac879ab1c12"
+    }
+  ],
+  "bookURL": "https://www.suduguu.com/3560/",
+  "catalogCount": 999,
+  "requests": [
+    {
+      "requestedURL": "https://www.suduguu.com/i/sor.aspx?key=%E5%85%AC%E8%80%83%E6%8D%A1%E6%BC%8F",
+      "url": "https://www.suduguu.com/i/sor.aspx?key=%E5%85%AC%E8%80%83%E6%8D%A1%E6%BC%8F",
+      "code": 200,
+      "bytes": 3086,
+      "sha256": "6715b2e312ea9e8474e8fb96b72fa09cee707395ec602058ed5d84bd6f30d129"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/",
+      "url": "https://www.suduguu.com/3560/",
+      "code": 200,
+      "bytes": 70573,
+      "sha256": "078b2cb61420b0a171fd04f21214a515f07c59f98203ea5693f91e154237af06"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/",
+      "url": "https://www.suduguu.com/3560/",
+      "code": 200,
+      "bytes": 70573,
+      "sha256": "078b2cb61420b0a171fd04f21214a515f07c59f98203ea5693f91e154237af06"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308764.html",
+      "url": "https://www.suduguu.com/3560/2308764.html",
+      "code": 200,
+      "bytes": 6219,
+      "sha256": "9c2a64dc3bda764ac5d93fb1d8b1bbf75d825640108df72568ef2adbd0b6c976"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308764-2.html",
+      "url": "https://www.suduguu.com/3560/2308764-2.html",
+      "code": 200,
+      "bytes": 6318,
+      "sha256": "8d1cb4ee40e00e010dc0e5e28f3078b2e09efd751c6875cf22a7a1abe2ddaec4"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308764-3.html",
+      "url": "https://www.suduguu.com/3560/2308764-3.html",
+      "code": 200,
+      "bytes": 6089,
+      "sha256": "2d15d5c7e8690a214f569f874b9ff48699f7b2a66f287bd91be294c637cebbf5"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308764-4.html",
+      "url": "https://www.suduguu.com/3560/2308764-4.html",
+      "code": 200,
+      "bytes": 6546,
+      "sha256": "fd087705dccd9f53b6136f1d97774b4be3808fa3f6011c28198b328519906d3a"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308765.html",
+      "url": "https://www.suduguu.com/3560/2308765.html",
+      "code": 200,
+      "bytes": 5864,
+      "sha256": "6b2431460bd1ce0db226db6c22a94108f5e1e81dc1a0f7561d43a5004de3676b"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308765-2.html",
+      "url": "https://www.suduguu.com/3560/2308765-2.html",
+      "code": 200,
+      "bytes": 6137,
+      "sha256": "7e7ecd9f78c6458312c40760ccc2f1be32d498e484e11c2ac8f372638fd7bcd3"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308765-3.html",
+      "url": "https://www.suduguu.com/3560/2308765-3.html",
+      "code": 200,
+      "bytes": 6158,
+      "sha256": "cff7773b31ac8a5f341fc4febb1bcf489fd7771ffd907d9e5b1b0627dbb8237e"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308765-4.html",
+      "url": "https://www.suduguu.com/3560/2308765-4.html",
+      "code": 200,
+      "bytes": 6923,
+      "sha256": "c0c785d89c6b391b69b382368c047b5a647c131f7410d21be385c80c0f6dba62"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308766.html",
+      "url": "https://www.suduguu.com/3560/2308766.html",
+      "code": 200,
+      "bytes": 6300,
+      "sha256": "0fa5bc94d99249c73d68d18bf07b5375fc7602f52eb11579d195aaf6cec12bbd"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308766-2.html",
+      "url": "https://www.suduguu.com/3560/2308766-2.html",
+      "code": 200,
+      "bytes": 6258,
+      "sha256": "3fefcca8d0e4b35aa5a78e3630be3933b4b7830ad4a677b30649d7ed3b6f9858"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308766-3.html",
+      "url": "https://www.suduguu.com/3560/2308766-3.html",
+      "code": 200,
+      "bytes": 6368,
+      "sha256": "d73453b9fa629ccd57c7c30ff76c0183dea045ecb2d3b1f3cecf28bc11b49030"
+    },
+    {
+      "requestedURL": "https://www.suduguu.com/3560/2308766-4.html",
+      "url": "https://www.suduguu.com/3560/2308766-4.html",
+      "code": 200,
+      "bytes": 6268,
+      "sha256": "b2d3b309a786ad24a0836cd6162c102eb76c4550cc5789080f4fc28a61d68a8b"
+    }
+  ],
+  "finishedAt": "2026-11-25T12:06:10.254Z",
+  "sourceUnchanged": true,
+  "adapterUnchangedDuringRun": true,
+  "reproductionNote": "User supplied 权力巅峰; the unique live search result uses 权利巅峰. Font layout is not executed by this network diagnostic.",
+  "chapterBoundaries": [
+    {
+      "from": 186,
+      "to": 187,
+      "fromPageCount": 4,
+      "toPageCount": 4,
+      "previousLast": {
+        "utf16": 39,
+        "codePoints": 39,
+        "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f"
+      },
+      "nextFirst": {
+        "utf16": 28,
+        "codePoints": 28,
+        "sha256": "507a73c10ad458b03c8b71bf216cd976d76acb9b8d506bd4a7419ab1ef50650c"
+      },
+      "nextChapterURLMatches": true
+    },
+    {
+      "from": 187,
+      "to": 188,
+      "fromPageCount": 4,
+      "toPageCount": 4,
+      "previousLast": {
+        "utf16": 39,
+        "codePoints": 39,
+        "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f"
+      },
+      "nextFirst": {
+        "utf16": 79,
+        "codePoints": 79,
+        "sha256": "28093377e7ce1555c6a7ab5744c1ba0d17642467836b179cc917d9009abce738"
+      },
+      "nextChapterURLMatches": true
+    }
+  ],
+  "sharedTailHashes": [
+    {
+      "sha256": "378734c6970675b91cc800141443b8c6d9fbc10be5c4458f9d56a3752dc5d26f",
+      "chapters": [
+        186,
+        187,
+        188
+      ]
+    }
+  ]
+}

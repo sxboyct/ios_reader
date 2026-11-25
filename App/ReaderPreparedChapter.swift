@@ -7,6 +7,7 @@ struct ReaderRenderConfiguration: Equatable, @unchecked Sendable {
     let fontName: String
     let fontSize: Double
     let lineSpacing: Double
+    let appearance: String
     let ink: UIColor
     let background: UIColor
     let image: UIImage?
@@ -16,7 +17,7 @@ struct ReaderRenderConfiguration: Equatable, @unchecked Sendable {
     static func == (left: Self, right: Self) -> Bool {
         left.viewport == right.viewport && left.script == right.script && left.fontName == right.fontName
             && left.fontSize == right.fontSize && left.lineSpacing == right.lineSpacing
-            && left.ink.isEqual(right.ink) && left.background.isEqual(right.background)
+            && left.appearance == right.appearance
             && left.image === right.image && left.opacity == right.opacity && left.scale == right.scale
     }
 }
