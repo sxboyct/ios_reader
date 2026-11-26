@@ -2,7 +2,18 @@
 
 从 [jo32/tvbox-silicon](https://github.com/jo32/tvbox-silicon) 提取的独立文字阅读应用，支持 iOS 17+ 的 iPhone / iPad。
 
-保留上游 Legado JavaScript 规则引擎、Swift 书源模型、搜索聚合、章节缓存、书架与书签模型、简繁转换。当前版本 1.3.7，主界面只有「书架 / 找书 / 书源」，字体管理和图片背景在阅读设置中。没有影视、直播、音乐、有声书播放、漫画、网盘、广告、远程错误上报，以及 Java / Python / Node 应用运行时。
+保留上游 Legado JavaScript 规则引擎、Swift 书源模型、搜索聚合、章节缓存、书架与书签模型、简繁转换。当前版本 1.4.0，主界面为「书架 / 找书 / 发现 / 书源」，字体管理和图片背景在阅读设置中。没有影视、直播、音乐、有声书播放、漫画、网盘、广告、远程错误上报，以及 Java / Python / Node 应用运行时。
+
+## 发现与光遇聚合书源
+
+1. 在「书源」导入原文件 `光遇聚合-阅读26.10.9.json` 并启用，无需修改 JSON。
+2. 打开底部「发现」→ 光遇聚合，选择分类进入书单，支持加载更多、查看详情、加入书架和阅读。
+3. 点击「登录与书源设置」，可选择线路、搜索来源、发现来源、频道和网络模式，点击「保存文字设置」应用。关闭面板后发现分类自动刷新。「书源」列表也提供登录与设置入口。
+4. 设置采用圆角卡片、双列操作按钮，保留邮箱、密码、登录、退出、查看信息及配置更新等文字书源操作。注册、用户后台等网页在应用内打开，完成后保存该站登录 Cookie；取消不保存。成功提交的账号表单沿用 Keychain 保存。
+
+适配涵盖此源的 JavaScript 库、带类型的 data URL、搜索、详情、目录、正文及发现规则。线路和文字选项使用 iOS 原生设置；原 Android HTML 设置面板、段评样式、源内自动更新，以及听书、漫画、短剧入口不在支持范围。仍可通过「书源」导入更新后的 JSON。
+
+2026-11-26 使用原始附件做离线完整规则链测试，并只读访问实际配置、发现与搜索接口：适配后得到 287 个发现入口，测试搜索返回 94 条结果。真实账号认证、真实正文接口和 iPhone 界面未验收；接口可能要求用户自行登录。记录见 `Docs/guangyu-live.json`，上述结果不是 IPA 编译证明。
 
 ## 阅读
 
@@ -57,7 +68,7 @@
 
 附件「笔落纸端勾勒回忆.ttf」已用 FontTools 检查，内部 PostScript 名为 `BiLZDGLHYSS`，包含 10575 个映射字符。App 的字体列表使用字体内部名称，不一定等于文件名。用户字体没有内置到源码或安装包；请在 App 中导入原文件。CoreText 真机显示效果仍需 iOS 验证。
 
-这个移植对应上游的在线小说功能，不是 EPUB/PDF 阅读器。不附带第三方书源或书籍。当前界面不包含探索分类和书源登录表单；需要交互登录的书源暂不适用。已保留通用规则引擎及 WebKit 页面解析能力，网站规则失效、验证码或网络错误仍可能导致读取失败。
+这个移植对应上游的在线小说功能，不是 EPUB/PDF 阅读器。不附带第三方书源或书籍。支持发现分类、常见 Legado 登录表单及网页登录 Cookie 回传。已保留通用规则引擎及 WebKit 页面解析能力，网站规则失效、特殊交互、验证码或网络错误仍可能导致读取失败。
 
 ## GitHub Actions 打包
 
@@ -71,7 +82,7 @@
 
 默认不需要证书 Secrets，产物**未签名**。IPA 需要使用你自己的 Apple 账号和签名工具重签后安装，无法直接点击安装，也不能直接上传 App Store/TestFlight。此工作流不会自动发布 Release。
 
-应用显示名为「映夏阅读」，版本 1.3.7 / build 12；保留原 Bundle ID、Xcode scheme 和英文产物名称，便于覆盖升级并保留书架、字体及阅读设置。
+应用显示名为「映夏阅读」，版本 1.4.0 / build 13；保留原 Bundle ID、Xcode scheme 和英文产物名称，便于覆盖升级并保留书架、字体及阅读设置。
 
 ## 在 Mac 上构建 / 签名
 
@@ -92,6 +103,9 @@ open YingxiaReader.xcodeproj
 python3 scripts/check-project.py
 node --experimental-vm-modules scripts/test-engine.mjs
 node --experimental-vm-modules scripts/test-xiangse.mjs
+node --experimental-vm-modules scripts/test-discovery.mjs
+# 附件不随源码分发；在本地指定原 JSON 路径执行完整兼容回归：
+node --experimental-vm-modules scripts/test-guangyu.mjs "/path/to/光遇聚合-阅读26.10.9.json"
 ```
 
 Node 仅用于开发时验证规则引擎，不打包进 App。Swift 原生测试由 Actions 执行，包括实际 QuickJS 引擎启动和规则提取测试、书签与简繁转换测试。

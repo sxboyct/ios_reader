@@ -1,0 +1,43 @@
+{
+  "checkedDate": "2026-11-26",
+  "sourceFile": "光遇聚合-阅读26.10.9.json",
+  "sourceSHA256": "1ee6ed1c9ccc455cd75504515e37faa5e19181a3ab4edc91cf665602d7b3ac49",
+  "status": "responses_received",
+  "sourceLoadStatus": "passed",
+  "firstFormStatus": "passed",
+  "nativeSourceCount": 54,
+  "nativeHostCount": 8,
+  "networkModeStatus": "matches_original",
+  "discoverStatus": "completed",
+  "discoverCount": 287,
+  "searchStatus": "completed",
+  "searchCount": 94,
+  "authenticationWrites": 0,
+  "iOSRuntimeStatus": "not_run",
+  "checks": [
+    {
+      "endpoint": "cloudConfig",
+      "status": "json_received",
+      "httpStatus": 200,
+      "count": 0,
+      "hostsCount": 8,
+      "hostsStatus": "string_array",
+      "sourcesCount": 55,
+      "sourcesStatus": "string_array"
+    },
+    {
+      "endpoint": "discover",
+      "status": "json_received",
+      "httpStatus": 200,
+      "count": 332,
+      "apiCode": 0
+    },
+    {
+      "endpoint": "search",
+      "status": "json_received",
+      "httpStatus": 200,
+      "count": 94,
+      "apiCode": 0
+    }
+  ]
+}

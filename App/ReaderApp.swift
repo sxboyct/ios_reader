@@ -11,6 +11,7 @@ struct ReaderApp: App {
             TabView(selection: $selectedTab) {
                 NavigationStack { ShelfView() }.tabItem { Label("书架", systemImage: "books.vertical") }.tag(0)
                 NavigationStack { SearchView() }.tabItem { Label("找书", systemImage: "magnifyingglass") }.tag(1)
+                NavigationStack { DiscoverView() }.tabItem { Label("发现", systemImage: "safari") }.tag(3)
                 NavigationStack { SourcesView() }.tabItem { Label("书源", systemImage: "list.bullet.rectangle") }.tag(2)
             }
             .environment(library)

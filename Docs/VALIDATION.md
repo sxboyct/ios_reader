@@ -1,5 +1,16 @@
 # Validation record
 
+## 1.4.0 / build 13 — 2026-11-26
+
+- Added Discover tab, enabled-source list, category grid, paged/deduplicated book lists, and links to the existing detail/reader flow. Source login/settings can be opened from Discover or Sources; form order and full-width hints are preserved with rounded one/two-column rows.
+- Adapted the unchanged external Guangyu 26.10.9 JSON's text workflow: shared/destructured jsLib declarations, typed data URL hex responses and book rule helpers. Native selectors replace its Android HTML panels for line/source/channel/network settings; multimedia actions and unsupported HTML panels are excluded. Library load failures now report an error instead of continuing with missing functions.
+- Added visible HTTP(S) login browser with per-source cookie handoff, expiry/removal handling, cancellation without saving and request-log redaction. Failed login submissions do not masquerade as authenticated sessions. No real account registration, login, settings upload or other account mutation was performed during validation.
+- Settings changes invalidate pooled sessions, including ones busy when changes happen. Discovery refresh rebuilds source globals; an older asynchronous response cannot overwrite the categories loaded after settings dismissal.
+- Passed local project/resource checks, Legado and Xiangse regressions, synthetic discovery/login/cookie/data-URL regressions, and complete external-source fixture tests. Swift syntax parsing passed for edited app/model/test files and the modified NovelRuntime actor; the parser does not handle the unchanged conditional-compilation branches elsewhere in that runtime file. YAML checks passed. These checks do not type-check Swift or run WebKit.
+- Read-only live validation used the original JSON and actual cloud/discovery/search endpoints: 287 adapted discovery entries and 94 search records. Sanitized status/counts are in `guangyu-live.json`. Detail/catalog/content and authentication were validated using fixture responses only.
+- GitHub Actions remains the macOS/Xcode build path. It now runs the synthetic discovery regression and native `DiscoveryTests` in addition to existing tests before packaging. The private/local source attachment is not required in CI. No Xcode test execution, IPA build or iPhone UI validation was performed on Windows.
+- Device acceptance: import the original attachment; open Discover; change line/source/channel and save; confirm refreshed categories, pagination and detail navigation. Check login rejection/success/logout, web login completion/cancellation, settings after restart and text chapter reading. Recheck the existing 1.3.7 slide/curl/cover chapter transitions.
+
 ## 1.3.7 / build 12 — 2026-11-25
 
 - User clarified that leftward dragging at the start of a chapter shows the preceding chapter's final page, then continues reading backward. The old slide default `reader.slideForwardRight = true` maps precisely to that behavior; other styles map leftward swipes forward. Set slide's new `reader.slideReversed` preference to false by default, including upgrades (do not inherit the old inverse preference). The settings toggle explicitly offers reverse slide direction. Tap left/right semantics remain previous/next.

@@ -9,6 +9,7 @@ struct SourcesView: View {
     @State private var busy = false
     @State private var message: String?
     @State private var filter = ""
+    @State private var settingsSource: NovelSource?
     var body: some View {
         List {
             Section("导入 Legado / 香色文字书源") {
@@ -39,6 +40,7 @@ struct SourcesView: View {
             }
             Section("启用的书源参与搜索") {
                 ForEach(library.sources.filter { filter.isEmpty || $0.name.localizedCaseInsensitiveContains(filter) }) { source in
+                  VStack(alignment: .leading, spacing: 8) {
                     Toggle(isOn: Binding(get: { NovelSources.shared.isEnabled(source) }, set: {
                         NovelSources.shared.setEnabled($0, for: [source.key]); library.reloadSources()
                     })) {
@@ -47,6 +49,11 @@ struct SourcesView: View {
                             if !source.group.isEmpty { Text(source.group).font(.caption).foregroundStyle(.secondary) }
                         }
                     }
+                    if source.signsIn {
+                        Button { settingsSource = source } label: { Label("登录与设置", systemImage: "slider.horizontal.3") }
+                            .font(.subheadline).buttonStyle(.borderless)
+                    }
+                  }
                 }
             }
             Section {
@@ -56,6 +63,7 @@ struct SourcesView: View {
         }
         .navigationTitle("书源")
         .searchable(text: $filter, prompt: "筛选书源")
+        .sheet(item: $settingsSource) { source in SourceSignInView(source: source) }
         .sheet(isPresented: $importing) {
             SourceFileImportView { url, data in
               do {

@@ -14,6 +14,8 @@ const pages = {
 };
 const context = vm.createContext({ console, URL, TextEncoder, TextDecoder });
 context.__host = (op, argument) => {
+  if (op === 'encode') return Buffer.from(argument).toString('base64');
+  if (op === 'decode') return Buffer.from(JSON.parse(argument).base64, 'base64').toString('utf8');
   if (op === 'url') {
     const a = JSON.parse(argument), url = new URL(a.href, a.base || undefined);
     return JSON.stringify(Object.fromEntries(['href','origin','protocol','host','hostname','port','pathname','search','hash','username','password'].map(k => [k, url[k]])));

@@ -27,6 +27,7 @@ public actor NovelRuntime {
         let script: ScriptSession
         /// The loaded source's key and revision.
         var key = "", revision = ""
+        var settingsGeneration = 0
         var used = Date()
         init(script: ScriptSession) { self.script = script }
     }
@@ -36,6 +37,7 @@ public actor NovelRuntime {
     private var pooled = 0
     private var waiting: [CheckedContinuation<Session?, Never>] = []
     private var trimming: Task<Void, Never>?
+    private var settingsGenerations: [String: Int] = [:]
 
     // MARK: The API
 
@@ -80,28 +82,42 @@ public actor NovelRuntime {
 
     /// Keeps the form's values as the source's login info and runs its login script.
     public func signIn(_ source: NovelSource, values: [String: String]) async throws -> NovelSignInOutcome {
-        try decode(NovelSignInOutcome.self, try await readingCall(source, "login", [values], budget: 60))
+        defer { invalidateSettings(source.key) }
+        return try decode(NovelSignInOutcome.self, try await readingCall(source, "login", [values], budget: 60))
     }
 
     /// A form button's script, with the form's values.
     public func signInAction(_ source: NovelSource, values: [String: String], action: String) async throws -> NovelSignInOutcome {
-        try decode(NovelSignInOutcome.self, try await readingCall(source, "loginAction", [values, action], budget: 60))
+        defer { invalidateSettings(source.key) }
+        return try decode(NovelSignInOutcome.self, try await readingCall(source, "loginAction", [values, action], budget: 60))
+    }
+
+    /// Supplies the source's own cookies to its interactive login browser.
+    public func signInCookies(_ source: NovelSource, page: String) async throws -> String {
+        try await readingCall(source, "loginCookies", [page], budget: 10) as? String ?? ""
     }
 
     /// The cookies a sign-in on the source's website left (`name=value; …`), for its requests from now on.
     public func keepSignInCookies(_ source: NovelSource, page: String, cookies: String) async throws {
+        defer { invalidateSettings(source.key) }
         _ = try await readingCall(source, "keepCookies", [page, cookies], budget: 10)
     }
 
     public func signOut(_ source: NovelSource) async throws {
+        defer { invalidateSettings(source.key) }
         _ = try await readingCall(source, "logout", [], budget: 10)
     }
 
     /// Drops a source's reading runtime and what it keeps in memory, e.g. after its list was updated or removed.
     public func reset(_ key: String) {
+        invalidateSettings(key)
         reading.removeValue(forKey: key)?.script.close()
         readingBusy.removeValue(forKey: key)?.cancel()
         for session in idle where session.key == key { session.key = ""; session.revision = "" }
+    }
+
+    private func invalidateSettings(_ key: String) {
+        settingsGenerations[key, default: 0] += 1
     }
 
     // MARK: Pooled runtimes
@@ -154,7 +170,12 @@ public actor NovelRuntime {
         var broken = false
         defer { giveBack(session, broken: broken) }
         do {
+            let generation = settingsGenerations[source.key, default: 0]
+            // An action can change source globals as well as its persistent variables. A leased
+            // session sees that change on its next call, including sessions busy during the action.
+            if session.settingsGeneration != generation || function == "exploreKinds" { session.revision = "" }
             try await Self.load(source, into: session)
+            session.settingsGeneration = generation
             return try await Self.call(session, source: source, function, encoded, budget: budget)
         } catch {
             broken = Self.isStuck(error)

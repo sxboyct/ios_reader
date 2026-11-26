@@ -193,6 +193,8 @@ public struct NovelSignInForm: Codable, Hashable, Sendable {
         public var action: String?
         /// A select's or toggle's choices.
         public var chars: [String]
+        /// Full-width row, as requested by the source's form layout.
+        public var wide: Bool = false
         public init(name: String, type: String, action: String? = nil, chars: [String] = []) { self.name = name; self.type = type; self.action = action; self.chars = chars }
         public init(from decoder: any Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -200,6 +202,7 @@ public struct NovelSignInForm: Codable, Hashable, Sendable {
             type = ((try? c.decodeIfPresent(String.self, forKey: .type)) ?? nil) ?? "text"
             action = (try? c.decodeIfPresent(String.self, forKey: .action)) ?? nil
             chars = ((try? c.decodeIfPresent([String].self, forKey: .chars)) ?? nil) ?? []
+            wide = (try? c.decodeIfPresent(Bool.self, forKey: .wide)) ?? false
         }
     }
     public var rows: [Field]
