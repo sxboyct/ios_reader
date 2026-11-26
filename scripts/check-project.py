@@ -8,6 +8,17 @@ for name in ['Package.swift', 'project.yml', 'LICENSE', 'App/ReaderApp.swift',
              'Vendor/QuickJS/include/TVScript.h', '.github/workflows/build-ios.yml',
              'Config/iOS/Assets.xcassets/AppIcon.appiconset/AppIcon.png']:
     assert (root / name).is_file(), name
+# XcodeGen includes the App directory as it exists on the runner. Missing uploads
+# otherwise surface much later as "cannot find ... in scope" during compilation.
+for name in ['AppAppearance.swift', 'BookDetailView.swift', 'DiscoverPageModel.swift',
+             'DiscoverView.swift', 'DocumentImportPicker.swift', 'FontSettingsView.swift',
+             'ReaderApp.swift', 'ReaderBackgrounds.swift', 'ReaderLibrary.swift',
+             'ReaderPageSurface.swift', 'ReaderPreparedChapter.swift', 'ReaderSettingsPanel.swift',
+             'ReaderView.swift', 'SearchView.swift', 'ShelfView.swift',
+             'SourceBrowserView.swift', 'SourceSignInView.swift', 'SourcesView.swift']:
+    assert (root / 'App' / name).is_file(), (
+        f'Missing App/{name}. Upload the complete App directory from the source archive, then start a new workflow.'
+    )
 assets = root / 'Sources/TVCore/ScriptAssets'
 for file in assets.rglob('*.js'):
     for relative in re.findall(r'''['"]assets://([^'"\s]+\.js)['"]''', file.read_text(encoding='utf-8')):

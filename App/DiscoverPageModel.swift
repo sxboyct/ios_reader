@@ -61,7 +61,7 @@ struct DiscoverPreview: Identifiable {
         do {
             _ = try await NovelRuntime.shared.signInAction(source, values: values, action: "__yingxia_apply_text_settings__")
             await reload(source)
-        } catch { error = error.localizedDescription }
+        } catch { self.error = error.localizedDescription }
     }
     func more(_ source: NovelSource) async {
         guard !loadingPreviews, canLoadMore else { return }
