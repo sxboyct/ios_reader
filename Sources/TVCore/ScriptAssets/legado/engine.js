@@ -2154,7 +2154,9 @@ function signInAction(values, action) {
 }
 
 // --- Entry points (NovelRuntime.swift) --------------------------------------------------------
-const baselineGlobals = new Set([...Object.getOwnPropertyNames(globalThis), '__legado', '__cryptoJS', 'CryptoJS']);
+// reader/engine.js installs its dispatcher after this imported module finishes.
+// Keep that host entry point across loads, while removing the previous source's globals.
+const baselineGlobals = new Set([...Object.getOwnPropertyNames(globalThis), '__legado', '__reader', '__cryptoJS', 'CryptoJS']);
 function resetSourceState() {
     nativeConfigAttempted = false;
     infoHtml.clear(); tocHtml.clear(); memoryCache.clear(); seenCookies.clear(); exploreKindsKept = null;

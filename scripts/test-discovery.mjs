@@ -1,8 +1,12 @@
 // Synthetic regression cases run in CI without redistributing a third-party source.
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import {load, context, unwrap} from './test-engine.mjs';
 await (await load('assets://reader/engine.js')).evaluate();
-const engine = context.__reader;
+// NovelRuntime evaluates __reader.<operation> afresh for every call. Holding the
+// dispatcher in a host variable hides accidental deletion of that global on load.
+const engine = new Proxy({}, {get: (_, name) => (...args) => vm.runInContext(
+    `__reader[${JSON.stringify(name)}](${args.map(value => JSON.stringify(value)).join(',')})`, context)});
 const source = {
     bookSourceUrl: 'https://discovery.example', bookSourceName: 'Discovery fixture', bookSourceType: 0,
     jsLib: 'const {sourceHeading} = {sourceHeading: "发现分类"};\nconst chosen = source.getVariable() || "男频";',
@@ -32,6 +36,11 @@ unwrap(engine.keepCookies('https://discovery.example/login', ''));
 assert.equal(unwrap(engine.loginCookies('https://discovery.example')), '');
 unwrap(engine.load(JSON.stringify({...source, bookSourceUrl: 'https://separate.example'})));
 assert.equal(unwrap(engine.exploreKinds())[0].title, '发现分类男频');
+unwrap(engine.load(JSON.stringify({bookSourceUrl: 'https://clean.example'})));
+assert.equal(vm.runInContext('typeof sourceHeading', context), 'undefined');
+assert.equal(vm.runInContext('typeof chosen', context), 'undefined');
+assert.equal(vm.runInContext('typeof __reader.search', context), 'function');
+assert.equal(vm.runInContext('typeof __legado.search', context), 'function');
 // Binary typed data URLs are hex strings; ordinary data URLs stay UTF-8.
 const payload = Buffer.from('中文正文').toString('base64');
 const dataSource = {...source, jsLib: '', ruleContent: {content: '@js:java.hexDecodeToString(result)'}};
