@@ -42,6 +42,8 @@ struct ReaderView: View {
     @State private var settings = false
     @State private var contents = false
     @State private var bookmarks = false
+    @State private var confirmingExit = false
+    @State private var unsavedEntry: NovelLibrary.ShelfBook
     @State private var revision = UUID()
     @State private var notice: String?
     @State private var saveTask: Task<Void, Never>?
@@ -67,6 +69,7 @@ struct ReaderView: View {
         self.book = book; self.chapters = chapters
         _index = State(initialValue: start); _resumePosition = State(initialValue: position)
         _resumeOffset = State(initialValue: characterOffset)
+        _unsavedEntry = State(initialValue: NovelLibrary.ShelfBook(book: book))
     }
     private var style: ReaderTurnStyle { ReaderTurnStyle(rawValue: turnStyle) ?? .slide }
     private var dark: Bool { theme == "夜间" || (theme == "自动" && colorScheme == .dark) }
@@ -134,7 +137,7 @@ struct ReaderView: View {
                         } description: { Text(failure) } actions: {
                             Button("重试") { revision = UUID() }
                             Button("阅读菜单") { controls = true }
-                            Button("退出阅读") { dismiss() }
+                            Button("退出阅读") { requestExit() }
                         }
                     } else {
                         ProgressView("正在加载章节…").frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -184,7 +187,12 @@ struct ReaderView: View {
         .persistentSystemOverlays(hideHomeIndicator ? .hidden : .visible)
         .interactiveDismissDisabled()
         .accessibilityAction(named: "阅读设置") { settings = true }
-        .accessibilityAction(named: "退出阅读") { dismiss() }
+        .accessibilityAction(named: "退出阅读") { requestExit() }
+        .alert("加入书架，下次接着读？", isPresented: $confirmingExit) {
+            Button("加入书架并退出") { finishReading(addToShelf: true) }
+            Button("直接退出", role: .destructive) { finishReading(addToShelf: false) }
+            Button("继续阅读", role: .cancel) { }
+        } message: { Text("《\(book.name)》还未加入书架。加入后会保存当前进度和书签。") }
         .task(id: "\(index)-\(revision)") { await load() }
         .task(id: loadedIndex) {
             guard let loadedIndex, loadedIndex == index else { return }
@@ -243,7 +251,7 @@ struct ReaderView: View {
     private var readerControls: some View {
         VStack {
             HStack(spacing: 16) {
-                Button { record(); dismiss() } label: { Image(systemName: "chevron.left") }.accessibilityLabel("退出阅读")
+                Button { requestExit() } label: { Image(systemName: "chevron.left") }.accessibilityLabel("退出阅读")
                 Text(book.name).font(.headline).lineLimit(1)
                 Spacer(minLength: 0)
                 Menu {
@@ -361,7 +369,7 @@ struct ReaderView: View {
     private var bookmarkList: some View {
         NavigationStack {
             List {
-                ForEach(library.entry(book)?.bookmarks ?? []) { mark in
+                ForEach((library.entry(book) ?? unsavedEntry).bookmarks) { mark in
                     Button {
                         jump(mark.chapterIndex, position: mark.position, offset: mark.characterOffset)
                         bookmarks = false; controls = false
@@ -369,12 +377,12 @@ struct ReaderView: View {
                         VStack(alignment: .leading) { Text(mark.chapterTitle); Text(mark.excerpt).font(.caption).lineLimit(2) }
                     }.swipeActions {
                         Button("删除", role: .destructive) {
-                            guard var entry = library.entry(book) else { return }
-                            entry.bookmarks.removeAll { $0.id == mark.id }; library.save(entry)
+                            var entry = library.entry(book) ?? unsavedEntry
+                            entry.bookmarks.removeAll { $0.id == mark.id }; keepProgress(entry)
                         }
                     }
                 }
-            }.overlay { if library.entry(book)?.bookmarks.isEmpty != false { ContentUnavailableView("暂无书签", systemImage: "bookmark") } }
+            }.overlay { if (library.entry(book) ?? unsavedEntry).bookmarks.isEmpty { ContentUnavailableView("暂无书签", systemImage: "bookmark") } }
                 .navigationTitle("书签").toolbar { Button("关闭") { bookmarks = false } }
         }
     }
@@ -557,18 +565,34 @@ struct ReaderView: View {
     private func record() {
         guard !isLoading, loadedIndex == index, loadedRevision == revision,
               content != nil, layout != nil, chapters.indices.contains(index) else { return }
-        var entry = library.entry(book) ?? NovelLibrary.ShelfBook(book: book)
+        var entry = library.entry(book) ?? unsavedEntry
+        entry.book = book
         entry.chapterIndex = index; entry.chapterTitle = chapters[index].title
         entry.chapterCount = chapters.count; entry.position = position; entry.characterOffset = characterOffset; entry.updated = Date()
-        library.save(entry)
+        keepProgress(entry)
+    }
+    private func keepProgress(_ entry: NovelLibrary.ShelfBook) {
+        unsavedEntry = entry
+        library.recordProgress(entry)
+    }
+    private func requestExit() {
+        record()
+        if library.entry(book) == nil { confirmingExit = true }
+        else { finishReading(addToShelf: false) }
+    }
+    private func finishReading(addToShelf: Bool) {
+        saveTask?.cancel(); record()
+        if addToShelf { library.save(unsavedEntry) }
+        library.flushShelf(); dismiss()
     }
     private func addBookmark() {
         record()
-        guard var entry = library.entry(book), let content else { return }
+        guard let content, chapters.indices.contains(index), !isLoading else { return }
+        var entry = library.entry(book) ?? unsavedEntry
         let at = min(layout?.paragraph(at: characterOffset) ?? 0, max(0, content.paragraphs.count - 1))
         entry.mark(NovelBookmark(chapterIndex: index, chapterTitle: chapters[index].title, position: position,
             excerpt: content.paragraphs.isEmpty ? "" : String(content.paragraphs[at].prefix(100)), characterOffset: characterOffset))
-        library.save(entry); notice = "已添加书签"
+        keepProgress(entry); notice = "已添加书签"
     }
     private func neighbor(_ direction: Int) -> Int? {
         var next = index + direction
