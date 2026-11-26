@@ -5,6 +5,7 @@ struct ShelfView: View {
     @Environment(ReaderLibrary.self) private var library
     @State private var query = ""
     @State private var onlyStarted = false
+    @State private var reading: NovelLibrary.ShelfBook?
     private var books: [NovelLibrary.ShelfBook] {
         library.shelf.filter {
             (!onlyStarted || $0.started) && (query.isEmpty || ($0.book.name + $0.book.author).localizedCaseInsensitiveContains(query))
@@ -12,13 +13,8 @@ struct ShelfView: View {
     }
     var body: some View {
         List {
-            HStack {
-                Text(onlyStarted ? "继续你的阅读" : "我的藏书").font(.title3.bold())
-                Spacer()
-                Text("\(books.count) 本").font(.subheadline).foregroundStyle(.secondary)
-            }.padding(.vertical, 4).cardListRow()
             ForEach(books) { entry in
-                NavigationLink { BookDetailView(book: entry.book) } label: { ShelfBookCard(entry: entry) }
+                Button { reading = entry } label: { ShelfBookCard(entry: entry) }
                     .buttonStyle(.plain).cardListRow()
                     .swipeActions {
                         Button("移出书架", role: .destructive) { library.remove(entry.book) }
@@ -37,6 +33,9 @@ struct ShelfView: View {
             }
         }
         .navigationTitle("书架")
+        .fullScreenCover(item: $reading) { entry in
+            ShelfReaderView(entry: entry).environment(library)
+        }
         .task { await library.refreshMissingCovers() }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索书名或作者")
         .toolbar {
@@ -47,6 +46,55 @@ struct ShelfView: View {
                 }
             } label: { Image(systemName: "line.3.horizontal.decrease.circle") }
                 .accessibilityLabel("筛选书架")
+        }
+    }
+}
+
+/// Opens the reader directly from the cached catalog, without fetching a detail page.
+private struct ShelfReaderView: View {
+    @Environment(ReaderLibrary.self) private var library
+    @Environment(\.dismiss) private var dismiss
+    let entry: NovelLibrary.ShelfBook
+    @State private var chapters: [NovelChapter] = []
+    @State private var resume: ReaderResume?
+    @State private var failure: String?
+    @State private var attempt = UUID()
+    var body: some View {
+        Group {
+            if let resume {
+                ReaderView(book: entry.book, chapters: chapters, start: resume.index,
+                    position: resume.position, characterOffset: resume.offset)
+            } else {
+                NavigationStack {
+                    VStack(spacing: 20) {
+                        if let failure {
+                            ContentUnavailableView {
+                                Label("暂时无法打开书籍", systemImage: "book.closed")
+                            } description: { Text(failure) } actions: {
+                                Button("重试") { attempt = UUID() }.buttonStyle(.borderedProminent)
+                            }
+                        } else {
+                            ProgressView("正在打开上次阅读位置…")
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity).appPage()
+                    .navigationTitle(entry.book.name).navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } } }
+                }
+            }
+        }
+        .interactiveDismissDisabled()
+        .task(id: attempt) {
+            guard resume == nil else { return }
+            failure = nil
+            do {
+                let found = try await NovelBooks.shared.chapters(entry.book)
+                guard !Task.isCancelled else { return }
+                guard let location = ReaderResume.resolve(library.entry(entry.book) ?? entry, chapters: found) else {
+                    failure = "目录中没有可阅读的章节，请稍后重试。"; return
+                }
+                chapters = found; resume = location
+            } catch { if !Task.isCancelled { failure = error.localizedDescription } }
         }
     }
 }

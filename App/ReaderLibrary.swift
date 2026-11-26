@@ -1,6 +1,26 @@
 import SwiftUI
 import TVCore
 
+/// Shared by shelf opening and detail-page Continue Reading.
+struct ReaderResume: Equatable {
+    let index: Int
+    let position: Double
+    let offset: Int?
+
+    static func resolve(_ entry: NovelLibrary.ShelfBook?, chapters: [NovelChapter]) -> Self? {
+        guard let index = NovelChapterMatch.index(title: entry?.chapterTitle ?? "",
+            index: entry?.chapterIndex ?? 0, in: chapters),
+              let chapter = chapters.first(where: { $0.index == index && !$0.isVolume }) else { return nil }
+        guard let entry, entry.started else { return Self(index: index, position: 0, offset: nil) }
+        let title = NovelChapterMatch.key(entry.chapterTitle)
+        // A renamed/replaced catalog may only match by index. Its old text offset is unsafe.
+        let sameChapter = title.isEmpty || title == NovelChapterMatch.key(chapter.title)
+        let position = sameChapter && entry.position.isFinite ? min(1, max(0, entry.position)) : 0
+        let offset = sameChapter ? entry.characterOffset.map { max(0, $0) } : nil
+        return Self(index: index, position: position, offset: offset)
+    }
+}
+
 @MainActor @Observable
 final class ReaderLibrary {
     private let shelfWrites = DispatchQueue(label: "reader.shelf-writes", qos: .utility)
