@@ -11,6 +11,6 @@ globalThis.__reader = {
         } catch (error) { return { error: String(error.message || error) }; }
     }
 };
-for (const name of ['search', 'info', 'toc', 'content', 'exploreKinds', 'explore', 'loginForm', 'login', 'loginAction', 'logout', 'keepCookies']) {
+for (const name of ['search', 'info', 'toc', 'content', 'exploreKinds', 'explore', 'loginForm', 'login', 'loginAction', 'logout', 'keepCookies', 'loginCookies']) {
     globalThis.__reader[name] = (...args) => active[name] ? active[name](...args) : { error: '此香色书源操作暂不支持：' + name };
 }

@@ -10,7 +10,15 @@ import * as XPath from 'assets://legado/xpath.js';
 const host = globalThis.__host;
 const $E = cheerio.load('');
 XPath.setSerializer((node, outer) => outer ? $E.html(node) : ($E(node).html() ?? ''));
-const log = (...values) => { try { host('novel.log', (S ? `<${S.bookSourceName}> ` : '') + values.map(v => typeof v === 'string' ? v : safeJSON(v)).join(' ').slice(0, 1500)); } catch { } };
+const log = (...values) => { try { host('novel.log', (S ? `<${S.bookSourceName}> ` : '') + redactLog(values.map(v => typeof v === 'string' ? v : safeJSON(v)).join(' ')).slice(0, 1500)); } catch { } };
+// Source scripts log whole URL option objects, including credentials. Do not retain payloads.
+function redactLog(text) {
+    if (/cookie|authorization|password|passwd|pwd|token|sessionid|ssionid|register_email|邮箱|密码|https?:|data:/i.test(text))
+        return '[书源日志已隐藏：请求地址或敏感字段]';
+    return text.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]');
+}
+let unsupportedFailure = null;
+function unsupported(message) { unsupportedFailure = message; fail(message); }
 function safeJSON(v) { try { return JSON.stringify(v); } catch { return String(v); } }
 const UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36';
 class LegadoError extends Error { }
@@ -254,7 +262,7 @@ function makeSource(json) {
     return Object.assign(Object.create({
         getKey() { return key; }, getTag() { return json.bookSourceName ?? key; },
         put(k, v) { store.set('v', k, v); return v; }, get(k) { return store.get('v', k); },
-        getVariable() { return store.get('sourceVariable', 'v'); }, putVariable(v) { if (v == null) store.remove('sourceVariable', 'v'); else store.set('sourceVariable', 'v', v); },
+        getVariable() { return store.get('sourceVariable', 'v'); }, putVariable(v) { assertTextSettings(v); exploreKindsKept = null; if (!v) nativeConfigAttempted = false; if (v == null) store.remove('sourceVariable', 'v'); else store.set('sourceVariable', 'v', v); },
         setVariable(v) { this.putVariable(v); },
         getLoginInfo() { return store.get('login', 'info') || null; }, getLoginInfoMap() { return mapView(lenientJSON(store.get('login', 'info'))); },
         putLoginInfo(info) { store.set('login', 'info', info); return true; }, removeLoginInfo() { store.remove('login', 'info'); },
@@ -329,6 +337,12 @@ class Book extends RuleData {
         this.kind = fields.kind ?? ''; this.intro = fields.intro ?? ''; this.coverUrl = fields.cover ?? ''; this.latestChapterTitle = fields.lastChapter ?? '';
         this.wordCount = fields.wordCount ?? ''; this.origin = S?.bookSourceUrl ?? ''; this.originName = S?.bookSourceName ?? '';
         this.durChapterIndex = 0; this.durChapterTitle = ''; this.totalChapterNum = 0; this.type = 8; this.customIntro = null; this.customCoverUrl = null; this.infoHtml = null; this.tocHtml = null;
+    }
+    setUseReplaceRule(value) { this.readConfig = { ...this.readConfig, useReplaceRule: !!value }; }
+    get type() { return this._type ?? 8; }
+    set type(value) {
+        if (![0, 8].includes(Number(value))) fail("仅支持文字小说，不支持听书、漫画或视频。");
+        this._type = Number(value);
     }
     getRealAuthor() { return this.author; }
     getUnreadChapterNum() { return 0; }
@@ -464,10 +478,11 @@ const isBotCheck = (code, text) => ((code === 202 || code === 403 || code === 50
 const isRedirectStub = text => { const t = String(text); return t.length < 2000 && /<script[^>]*>[^<]*location(\.href)?\s*(=|\.replace\(|\.assign\()/.test(t) && !t.replace(/<script[\s\S]*?<\/script>|<title>[\s\S]*?<\/title>|<[^>]+>/g, '').replace(/Redirecting|Loading\.*/gi, '').trim(); };
 /// A page as a browser renders it (NovelWebView): {content, url}.
 function webView({ url = null, html = null, js = null, headers = {}, challenge = false }) {
+    // Login operations must hand control to the visible native UI. HTML panels cannot be bridged.
+    if (signInSaid !== null) unsupported('不支持 Android WebView／HTML 设置面板，请使用原生文字设置。');
     const left = deadline - Date.now();
     if (left < 4000) fail('The book source took too long to answer.');
     const agent = Object.entries(headers).find(([k]) => k.toLowerCase() === 'user-agent')?.[1] ?? Object.entries(headerMap(false)).find(([k]) => k.toLowerCase() === 'user-agent')?.[1] ?? UA;
-    if (tracing) log(`webview ${url ?? '(html)'}${js ? ' js' : ''}${challenge ? ' (check)' : ''}`);
     const answer = JSON.parse(host('novel.webview', JSON.stringify({ url, html, js, ua: agent, headers, jar: String(S?.bookSourceUrl ?? ''), timeout: Math.min(25, left / 1000 - 2), challenge })));
     if (answer.failed) fail(answer.failed);
     return { content: String(answer.content ?? ''), url: String(answer.url || url || '') };
@@ -496,7 +511,13 @@ function perform(request) {
             } else if (request.encodedQuery != null) url = request.urlNoQuery + '?' + request.encodedQuery;
             if (isDataUrl(url)) {
                 const m = /^data:([^,]*?)(;base64)?,([\s\S]*)$/i.exec(url);
-                const text = m ? (m[2] ? decodeBase64(m[3], request.charset) : decodeURIComponent(m[3])) : '';
+                const bytes = m ? (m[2] ? bytesFromBase64(m[3]) : encodeText(decodeURIComponent(m[3]))) : [];
+                const decoded = decodeBytes(bytes, request.charset);
+                if (/^gy(search|detail|catalog|content)$/.test(String(request.type))) {
+                    const data = lenientJSON(decoded);
+                    if (data?.tab && data.tab !== '小说') fail('仅支持文字小说，不支持听书、漫画或视频。');
+                }
+                const text = request.type ? hexFromBytes(bytes) : decoded;
                 return new StrResponse(url, text, 200, {});
             }
             const answer = sendHTTP({ url, method: request.method, headers, body });
@@ -976,7 +997,7 @@ function runRhino(scope, code) {
     const at = trailingCompound(code);
     if (at <= 0 || !code.slice(0, at).trim()) return runner(scope, code);
     // The two parts share what the first declares: its top-level let/const become var.
-    const head = code.slice(0, at).replace(/(^|[;\n]\s*)(let|const)(\s+[A-Za-z_$])/g, '$1var$3');
+    const head = code.slice(0, at).replace(/(^|[;\n]\s*)(let|const)(\s+[A-Za-z_${\[])/g, '$1var$3');
     return rhinoRunner(scope, head, code.slice(at));
 }
 // Scripts parse what a JSON rule already gave them (`data.books[*]\n@js:JSON.parse(result)`), or a response:
@@ -1357,11 +1378,14 @@ Object.assign(Analyzer.prototype, {
     webView(html, url, js) { return webView({ html: html == null ? null : String(html), url: url == null ? null : absoluteURL(this.baseUrl ?? S.bookSourceUrl, String(url)), js: js == null ? null : String(js) }).content; },
     webViewGetSource() { fail('This source needs a web view, which Yingxia does not have.'); },
     webViewGetOverrideUrl() { fail('This source needs a web view, which Yingxia does not have.'); },
-    // Legado shows its browser for the reader to pass a check or sign in; here an off-screen one loads the page,
-    // which gets past checks a browser passes by itself, and hands its cookies to the source.
-    startBrowser(url) { webView({ url: absoluteURL(this.baseUrl ?? S.bookSourceUrl, String(url)), challenge: true }); },
-    startBrowserAwait(url) { const page = webView({ url: absoluteURL(this.baseUrl ?? S.bookSourceUrl, String(url)), challenge: true }); return new StrResponse(page.url, page.content, 200, {}); },
-    showBrowser() { fail('This source needs a browser, which Yingxia does not offer.'); }, openUrl() { }, openVideoPlayer() { },
+    // Form actions hand HTTP pages to the native sign-in UI. Rule evaluation retains the host WebView path.
+    startBrowser(url) { if (signInSaid !== null && isWebAddress(url)) { signInOpen = String(url); return; } webView({ url: absoluteURL(this.baseUrl ?? S.bookSourceUrl, String(url)), challenge: true }); },
+    startBrowserAwait(url) { if (signInSaid !== null && isWebAddress(url)) { signInOpen = String(url); return new StrResponse(String(url), '', 200, {}); } const page = webView({ url: absoluteURL(this.baseUrl ?? S.bookSourceUrl, String(url)), challenge: true }); return new StrResponse(page.url, page.content, 200, {}); },
+    showBrowser() { fail('不支持源脚本 WebView／内嵌浏览器能力。'); },
+    showDialog() { fail('不支持 Android 弹窗／HTML 设置面板，请使用原生设置。'); },
+    showReadingBrowser() { fail('不支持源脚本 WebView／内嵌浏览器能力。'); },
+    openUrl(url) { if (signInSaid !== null && isWebAddress(url)) { signInOpen = String(url); return; } fail('请从原生登录界面打开网页。'); },
+    openVideoPlayer() { fail('仅支持文字小说，不支持视频。'); },
     getVerificationCode() { fail('This source needs a verification code, which Yingxia cannot show.'); },
     queryTTF() { return null; }, queryBase64TTF() { return null; }, replaceFont(text) { return text; },
     getReadBookConfig() { return '{}'; }, getReadBookConfigMap() { return {}; }, getThemeMode() { return 'day'; }, getThemeConfig() { return '{}'; }, getThemeConfigMap() { return {}; },
@@ -1787,8 +1811,11 @@ function exploreKinds() {
             kinds.push(i < 0 ? { title: piece.trim(), url: '' } : { title: piece.slice(0, i).trim(), url: piece.slice(i + 2).trim() });
         }
     }
-    exploreKindsKept = kinds;
-    return kinds;
+    exploreKindsKept = isGuangyu() ? kinds.filter(k => {
+        let url = k.url; try { url = decodeURIComponent(url); } catch { }
+        return /^https?:\/\//i.test(url) && !/\{\{(?!\s*page\s*\}\})/.test(url) && !/(?:tab|type)=(?:听书|漫画|短剧|audio|video|comic)/i.test(url);
+    }) : kinds;
+    return exploreKindsKept;
 }
 
 // --- Rhino's Java bridge: the classes sources reach through Packages, JavaImporter and org.jsoup ---------
@@ -1997,23 +2024,23 @@ for (const [name, fn] of Object.entries({
 // A source signs in with a form (`loginUi`: text, password, select and toggle fields, labels and buttons). What the
 // form holds is the source's login info, which the `loginUrl` script's login() reads (source.getLoginInfoMap()) to
 // sign in, usually keeping a token with source.putLoginHeader(). A source with no form signs in on its website.
-let signInSaid = null, signInValues = null;
+let signInSaid = null, signInValues = null, signInOpen = null;
 const inlineJS = rule => { const t = String(rule ?? '').trim(); const m = /^<js>([\s\S]*?)<\/js>$/i.exec(t) ?? /^@js:([\s\S]*)$/i.exec(t); return m ? m[1].trim() : null; };
 const isWebAddress = text => /^https?:\/\/\S+$/i.test(String(text ?? '').trim());
 /// The `loginUrl` script, or '' when there is none or it is a web page.
 const loginScript = () => { const t = String(S.loginUrl ?? '').trim(); const code = inlineJS(t) ?? t; return isWebAddress(code) ? '' : code; };
 /// Runs `code` after the login script, with the form's values as `result`; answers what it said and the values it set.
 function signInRun(code, values) {
-    signInSaid = []; signInValues = { ...values };
+    signInSaid = []; signInValues = { ...values }; signInOpen = null;
     try {
         const an = new Analyzer({}); an.baseUrl = S.bookSourceUrl;
         const value = an.evalJS((loginScript() ? loginScript() + '\n' : '') + code, mapView(values));
-        return { value, said: signInSaid, values: signInValues };
+        return { value, said: signInSaid, values: signInValues, open: signInOpen };
     } catch (error) {
         // A script's own message (`throw '密码错误'`) as it wrote it.
         if (error instanceof LegadoError) throw error;
         fail(String(error?.message ?? error));
-    } finally { signInSaid = null; signInValues = null; }
+    } finally { signInSaid = null; signInValues = null; signInOpen = null; exploreKindsKept = null; }
 }
 function signInRows(stored) {
     const rule = String(S.loginUi ?? '').trim();
@@ -2024,7 +2051,7 @@ function signInRows(stored) {
     if (typeof rows === 'string' || rows instanceof String) rows = lenientJSON(String(rows));
     if (!Array.isArray(rows)) fail("This source's sign-in form couldn't be read.");
     return Array.from(rows).filter(r => r && typeof r === 'object').map(r => ({
-        name: String(r.name ?? ''), type: String(r.type ?? 'text'), action: r.action == null || r.action === '' ? null : String(r.action),
+        name: String(r.name ?? ''), type: String(r.type ?? 'text'), wide: Number(r.style?.layout_flexBasisPercent) >= 0.9, action: r.action == null || r.action === '' ? null : String(r.action),
         chars: Array.isArray(r.chars) ? r.chars.filter(c => c != null).map(String) : [], default: r.default == null ? null : String(r.default),
     })).filter(r => ['text', 'password', 'select', 'toggle', 'button', 'label'].includes(r.type) && r.name.trim());
 }
@@ -2036,41 +2063,100 @@ function signInPage() {
 }
 /// Signing out: the login info, the login header, and what signing in on the website kept.
 function signOut() {
+    if (isGuangyu()) signInRun('logout()', {});
     store.remove('login', 'info'); store.remove('login', 'header');
     const page = signInPage();
     if (page && store.get('login', 'web')) cookie.removeCookie(page);
     store.remove('login', 'web');
     return true;
 }
+// Guangyu's HTML panels have no native equivalent. Expose only its text settings.
+const isGuangyu = () => String(S?.searchUrl ?? '').includes('"gysearch"');
+function assertTextSettings(value) {
+    if (!isGuangyu()) return;
+    const settings = lenientJSON(value) || {};
+    for (const mode of [settings['更多设置']?.['搜索模式'], settings['发现页类型']])
+        if (mode && mode !== '小说') fail('仅支持文字小说，不支持听书、漫画或视频。');
+}
+let nativeConfigAttempted = false;
+function nativeTextSettings() {
+    if (!isGuangyu()) return [];
+    // The settings screen may be the first operation after import or reset.
+    // Try once per load/reset; an offline source still exposes local defaults and the refresh action.
+    if (!nativeConfigAttempted && !(lenientJSON(source.getVariable()) || {})['云端配置']?.version) {
+        nativeConfigAttempted = true;
+        try { new Analyzer({}).evalJS('getCloudSettings()', null); } catch { }
+    }
+    const v = lenientJSON(source.getVariable()) || {}, cloud = v['云端配置'] || {}, more = v['更多设置'] || {};
+    const strings = list => Array.isArray(list) ? list.filter(x => typeof x === 'string' && x) : [];
+    const hosts = strings(cloud.hosts).length ? strings(cloud.hosts) : strings(globalThis.hosts);
+    const sources = [...new Set(['全部', ...strings(cloud['小说'])])];
+    const row = (name, chars, value) => ({name, type: 'select', wide: true, chars: [...new Set([...chars, ...(value ? [value] : [])])], default: value || chars[0] || '', action: null});
+    return [row('线路（文字阅读）', hosts, v['线路']),
+        row('搜索来源（文字阅读）', sources, more['小说'] || '全部'),
+        row('发现来源（文字阅读）', sources, v['发现页来源'] || '番茄'),
+        row('频道（文字阅读）', ['男频', '女频'], v['频道']),
+        row('网络模式（文字阅读）', ['服务器', '本地'], more['网络模式'] === '本地' ? '本地' : '服务器'),
+        {name: '保存文字设置', type: 'button', wide: true, chars: [], default: null, action: '__yingxia_apply_text_settings__'}];
+}
+function saveTextSettings(values) {
+    const rows = nativeTextSettings().filter(r => r.type === 'select');
+    for (const r of rows) if (!r.chars.includes(values?.[r.name])) fail('请选择有效的' + r.name);
+    const v = lenientJSON(source.getVariable()) || {};
+    v['线路'] = values[rows[0].name]; v['发现页来源'] = values[rows[2].name]; v['频道'] = values[rows[3].name];
+    v['发现页类型'] = '小说';
+    v['更多设置'] = {...v['更多设置'], '搜索模式': '小说', '小说': values[rows[1].name], '网络模式': values[rows[4].name]};
+    source.putVariable(JSON.stringify(v));
+    return {said: ['文字设置已保存，请刷新发现页。'], values: stringMap(values)};
+}
 function signInForm() {
     const kept = lenientJSON(store.get('login', 'info'));
     const stored = kept && typeof kept === 'object' && !Array.isArray(kept) ? stringMap(kept) : {};
-    const rows = signInRows(stored);
+    const native = nativeTextSettings();
+    const rows = [...native, ...signInRows(stored).filter(r => !isGuangyu() || (
+        !/getServerSettings|getHtmlSettings|getSvgSettings|renderVersionPage|ste\(['"](?:听书|漫画|短剧|段评|图片)['"]\)|setFindSource|setSearchSource/.test(r.action || '') &&
+        !/^(发现页来源|搜索来源)\(|备用设置|段评|图片/.test(r.name)))];
     const values = {};
-    for (const r of rows) if (r.type !== 'button' && r.type !== 'label') values[r.name] = stored[r.name] ?? r.default ?? (r.chars[0] ?? '');
-    return { rows, values, web: signInPage(), signedIn: !!(store.get('login', 'info') || store.get('login', 'header') || store.get('login', 'web')) };
+    for (const r of rows) if (r.type !== 'button' && r.type !== 'label') values[r.name] = (native.includes(r) ? r.default : stored[r.name]) ?? r.default ?? (r.chars[0] ?? '');
+    return { rows, values, web: signInPage(), signedIn: isGuangyu() ? String(new Analyzer({}).evalJS('getToken()', null)).length > 10 : !!(store.get('login', 'header') || store.get('login', 'web')) };
 }
 /// The form's Sign In: keeps the values as the source's login info, then runs its login().
-function signIn(values) {
+function loginFields(values) {
     const map = stringMap(values);
-    if (!Object.keys(map).length) { store.remove('login', 'info'); return { said: [], values: null }; }
+    const names = isGuangyu() ? ['邮箱', '密码'] : signInRows(map).filter(r => !['button', 'label'].includes(r.type)).map(r => r.name);
+    return Object.fromEntries(names.filter(k => k in map).map(k => [k, map[k]]));
+}
+function signIn(values) {
+    const map = loginFields(values);
+    if (!Object.keys(map).length) return { said: [], values: null };
+    const previous = store.get('login', 'info');
+    const restore = () => previous ? store.set('login', 'info', previous) : store.remove('login', 'info');
+    // Legacy login() reads source.getLoginInfo(); expose the submitted fields while it executes.
     store.set('login', 'info', JSON.stringify(map));
-    if (!loginScript()) return { said: [], values: null };
-    const { value, said, values: changed } = signInRun("typeof login == 'function' ? (login.apply(this), true) : false", map);
-    if (value === false) fail('This source has no login function.');
-    return { said, values: changed };
+    try {
+        if (!loginScript()) return { said: [], values: null };
+        const { value, said, values: changed, open } = signInRun("if (typeof login !== 'function') throw new Error('This source has no login function.'); login.apply(this)", map);
+        if (value === false || open) restore();
+        return { said, values: changed, open, success: value !== false };
+    } catch (error) { restore(); throw error; }
 }
 /// A form button: a web page to open, or a script run with the form's values.
 function signInAction(values, action) {
     const text = String(action ?? '').trim();
+    if (text === '__yingxia_apply_text_settings__' && isGuangyu()) return saveTextSettings(values);
     if (isWebAddress(text)) return { said: [], values: null, open: text };
-    const { said, values: changed } = signInRun(text, stringMap(values));
-    return { said, values: changed };
+    const { said, values: changed, open, value } = signInRun(text, stringMap(values));
+    if (value === true && /^login\s*\(/.test(text)) {
+        const fields = loginFields(values);
+        if (Object.keys(fields).length) store.set('login', 'info', JSON.stringify(fields));
+    }
+    return { said, values: changed, open, success: value !== false };
 }
 
 // --- Entry points (NovelRuntime.swift) --------------------------------------------------------
 const baselineGlobals = new Set([...Object.getOwnPropertyNames(globalThis), '__legado', '__cryptoJS', 'CryptoJS']);
 function resetSourceState() {
+    nativeConfigAttempted = false;
     infoHtml.clear(); tocHtml.clear(); memoryCache.clear(); seenCookies.clear(); exploreKindsKept = null;
     // What the last source's jsLib and scripts left in the global scope.
     for (const name of Object.getOwnPropertyNames(globalThis)) if (!baselineGlobals.has(name)) { try { delete globalThis[name]; } catch { } }
@@ -2078,11 +2164,11 @@ function resetSourceState() {
 /// What Rhino parses and QuickJS doesn't: destructured arrow parameters without parentheses.
 const rhinoSyntax = code => code.includes('=>') ? code.replace(/(^|[(,=:\s])(\[[\w\s,$]*\]|\{[\w\s,$:]*\})\s*=>/g, '$1($2)=>') : code;
 /// Rhino runs jsLib as a script whose top-level `let`/`const` are shared; an indirect eval would keep them to itself.
-const globalScript = code => rhinoSyntax(String(code)).replace(/^(let|const)(\s+[A-Za-z_$])/gm, 'var$2');
+const globalScript = code => rhinoSyntax(String(code)).replace(/^(let|const)(\s+[A-Za-z_${\[])/gm, 'var$2');
 function load(text) {
     const json = typeof text === 'string' ? JSON.parse(text) : text;
     if (!json || typeof json !== 'object' || !json.bookSourceUrl) fail('This is not a Legado book source.');
-    if (json.bookSourceType != null && ![0, 1].includes(Number(json.bookSourceType))) fail('This is not a text book source.');
+    if (json.bookSourceType != null && Number(json.bookSourceType) !== 0) fail('This is not a text book source.');
     resetSourceState();
     S = json; source = makeSource(json);
     globalThis.source = source;
@@ -2092,7 +2178,7 @@ function load(text) {
         try {
             if (map && typeof map === 'object') { for (const url of Object.values(map)) (0, eval)(Analyzer.prototype.cacheFile.call(new Analyzer({}), String(url), 86400)); }
             else (0, eval)(globalScript(lib));
-        } catch (error) { log('jsLib failed', String(error?.message ?? error)); }
+        } catch (error) { fail('jsLib 加载失败：' + String(error?.message ?? error)); }
     }
     return { name: S.bookSourceName ?? S.bookSourceUrl };
 }
@@ -2114,7 +2200,8 @@ const chapterFrom = (value, book) => new Chapter(value ?? {}, book.bookUrl, book
 function run(fn, budget) {
     requestCount = 0;
     deadline = Date.now() + (Number(budget) > 0 ? Number(budget) : 60000);
-    try { return { value: fn() }; }
+    unsupportedFailure = null;
+    try { const value = fn(); if (unsupportedFailure) fail(unsupportedFailure); return { value }; }
     catch (error) {
         const message = error instanceof LegadoError ? error.message : `${error?.name ?? 'Error'}: ${error?.message ?? error}`;
         log('failed:', message, error?.stack ? String(error.stack).slice(0, 600) : '');
@@ -2154,12 +2241,13 @@ globalThis.__legado = {
         const paragraphs = String(text).split(/\r?\n/).map(line => line.replace(/<img[^>]*>/gi, '').replace(/^[\s　 ]+|[\s　 ]+$/g, '')).filter(Boolean);
         return { title: String(chapter.title ?? ''), paragraphs, variables: stringMap(chapter.variableMap) };
     }, budget),
+    loginCookies: (page, budget) => run(() => cookie.getCookie(String(page)), budget),
     loginForm: budget => run(() => signInForm(), budget),
     login: (values, budget) => run(() => signIn(values), budget),
     loginAction: (values, action, budget) => run(() => signInAction(values, action), budget),
     logout: budget => run(() => signOut(), budget),
     // The cookies of a sign-in on the website, for the source's requests (Legado's WebViewLoginFragment).
-    keepCookies: (url, text, budget) => run(() => { cookie.replaceCookie(String(url), String(text)); store.set('login', 'web', '1'); return true; }, budget),
+    keepCookies: (url, text, budget) => run(() => { cookie.removeCookie(String(url)); cookie.setCookie(String(url), String(text)); exploreKindsKept = null; if (String(text).trim()) store.set('login', 'web', '1'); else store.remove('login', 'web'); return true; }, budget),
     // Debugging: a rule run on a text.
     rule: (rule, content, base) => run(() => new Analyzer({}).setContent(String(content), base).getStringList(String(rule))),
 };
